@@ -2,6 +2,6 @@
 from datetime import datetime
 from extensions import db
 
-class Caixa(db.Model):
-    __tablename__ = 'Caixa'
+# class Dashboard(db.Model):
+#     __tablename__ = 'Dashboard'
 

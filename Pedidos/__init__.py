@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template
 from extensions import admin as flask_admin, db, admin_required
 from Pedidos.admin import OrdersAdminView
-from Pedidos.modelos import Orders
+from Pedidos.models import Orders
 
 # Cria o blueprint de produtos
 produtos_bp = Blueprint('dashboard', __name__)

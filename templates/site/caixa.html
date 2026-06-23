@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+
+{% block title %}Caixa{% endblock %}
+
+{% block content %}
+  <div class="content bg-white h-100" style="max-width: 750px; width: 100%;">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body p-4">
+          
+          <!-- Alerta Dinâmico com Jinja2 (Muda a cor dependendo se o caixa está aberto ou fechado) -->
+          {% if caixa_aberto %}
+          <div class="d-flex align-items-center gap-2 p-2 rounded-2" style="background-color: #D1FAE5; color: #065F46; width: fit-content;">
+              <i class="fa-solid fa-circle" style="font-size: 0.6rem;"></i>
+              <span class="fw-semibold small">Caixa Aberto</span>
+          </div>
+          {% else %}
+          <div class="d-flex align-items-center gap-2 p-2 rounded-2" style="background-color: #FEE2E2; color: #B91C1C; width: fit-content;">
+              <i class="fa-solid fa-circle" style="font-size: 0.6rem;"></i>
+              <span class="fw-semibold small">Caixa Fechado</span>
+          </div>
+          {% endif %}
+        
+          <hr class="my-3 mx-2">
+        
+          <!-- Formulário Flask -->
+          <form name="formCaixa" method="POST" class="ng-pristine ng-valid">
+              
+              {# Se você usa Flask-WTF para proteção contra ataques CSRF, descomente a linha abaixo #}
+              {# <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"> #}
+              
+              <div class="row align-items-end g-3">
+                  
+                  <!-- Campo de Entrada -->
+                  <div class="col-auto" style="width: 180px;">
+                      <label for="saldo_inicial" class="form-label small text-muted mb-1">Saldo Inicial</label>
+                      <input id="saldo_inicial" type="text" name="saldo_inicial"
+                             class="form-control preco ng-pristine ng-untouched ng-valid ng-empty" 
+                             ng-model="saldoInicial" placeholder="R$ 0,00" required>
+                  </div>
+                  
+                  <!-- Botão de Envio (Mantido os gatilhos do seu AngularJS existente) -->
+                  <div class="col-auto">
+                      <button class="btn btn-success px-4 d-flex align-items-center justify-content-center" 
+                              type="submit" 
+                              name="abrir_caixa" 
+                              ng-click="abrirCaixa(saldoInicial)" 
+                              ng-class="{'loader': loading2 || loading}" 
+                              ng-disabled="loading2 || loading"
+                              {% if caixa_aberto %}disabled{% endif %}> {# Desativa o botão se o caixa já estiver aberto #}
+                          <span>Abrir Caixa</span>
+                      </button>
+                  </div>
+                
+              </div>
+          </form>
+        
+      </div>
+    </div>
+  </div>
+{% endblock %}
+{% block extra_js %}
+{% endblock %}

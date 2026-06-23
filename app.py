@@ -6,7 +6,9 @@ from flask_security import SQLAlchemyUserDatastore, hash_password
 from Usuarios.admin import SecureAdminIndexView 
 from Produtos import produtos_bp
 from Usuarios import usuarios_bp
-from Usuarios.modelos import User, Role
+from Dashboard import dashboard_bp
+from Caixa import caixa_bp
+from Usuarios.models import User, Role
 
 def create_app():
     app = Flask(__name__)
@@ -32,7 +34,9 @@ def create_app():
     
     user_datastore = SQLAlchemyUserDatastore(db, User, Role)
     security.init_app(app, user_datastore)
-
+    
+    app.register_blueprint(caixa_bp)
+    app.register_blueprint(dashboard_bp)
     app.register_blueprint(produtos_bp)
     app.register_blueprint(usuarios_bp)
 

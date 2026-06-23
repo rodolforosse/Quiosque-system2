@@ -1,0 +1,360 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+    <!-- FILTRO DE PERÍODO SIMPLIFICADO -->
+    <div class="row mb-4">
+        <div class="col-12 col-md-3">
+            <div class="form-group">
+                <label class="font-weight-bold text-muted text-xs text-uppercase mb-1">Período</label>
+                <select id="meuDropdown" class="form-select form-select-sm bg-body shadow-sm">
+                    <!-- O Jinja2 percorre o dicionário Python gerando as tags automaticamente -->
+                    {% for valor, texto in periodos.items() %}
+                        <option value="{{ valor }}" {% if periodo_selecionado == valor %}selected{% endif %}>{{ texto }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+    </div>
+    
+    <!-- CARTÕES DE MÉTRICAS -->
+    <div class="row">
+        <!-- Faturamento -->
+        <div class="col-12 col-sm-6 col-xl-3 mb-4">
+            <div class="card card-outline shadow-sm bg-body">
+                <div class="card-body d-flex align-items-center justify-content-between">
+                    <div>
+                        <h6 class="text-muted text-uppercase small mb-3">Faturamento</h6>
+                        <!-- Alterado para o padrão de formatação do Flask (Jinja2) -->
+                        <h3 class="text-muted my-1">R$ {{ "%.2f"|format(faturamento) }}</h3>
+                    </div>
+                    <div class="text-primary p-3 rounded-circle fs-3">
+                        <i class="fas fa-hand-holding-usd"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    
+        <!-- Pedidos -->
+        <div class="col-12 col-sm-6 col-xl-3 mb-4">
+            <div class="card card-outline shadow-sm bg-body">
+                <div class="card-body d-flex align-items-center justify-content-between">
+                    <div>
+                        <h6 class="text-muted text-uppercase small mb-3">Pedidos</h6>
+                        <h3 class="text-muted my-1">{{ total_pedidos }}</h3>
+                    </div>
+                    <div class="text-primary p-3 rounded-circle fs-3">
+                        <i class="fas fa-shopping-cart"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    
+        <!-- Ticket Médio -->
+        <div class="col-12 col-sm-6 col-xl-3 mb-4">
+            <div class="card card-outline shadow-sm bg-body">
+                <div class="card-body d-flex align-items-center justify-content-between">
+                    <div>
+                        <h6 class="text-muted text-uppercase small mb-3">Ticket médio</h6>
+                        <!-- Alterado para o padrão de formatação do Flask (Jinja2) -->
+                        <h3 class="text-muted my-1">R$ {{ "%.2f"|format(ticket_medio) }}</h3>
+                    </div>
+                    <div class="text-primary p-3 rounded-circle fs-3">
+                        <i class="fa-solid fa-square-poll-vertical"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    
+        <!-- Clientes -->
+        <div class="col-12 col-sm-6 col-xl-3 mb-4">
+            <div class="card card-outline shadow-sm bg-body">
+                <div class="card-body d-flex align-items-center justify-content-between">
+                    <div>
+                        <h6 class="text-muted text-uppercase small mb-3">Clientes</h6>
+                        <h3 class="text-muted my-1">{{ total_clientes }}</h3>
+                    </div>
+                    <div class="text-primary p-3 rounded-circle fs-3">
+                        <i class="fa-solid fa-users"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- FILEIRA 1 DE GRÁFICOS: FATURAMENTO AND CATEGORIAS -->
+    <div class="row">
+        <!-- Faturamento no Período -->
+        <div class="col-12 col-lg-6 mb-4">
+            <div class="card card-outline card-primary shadow-sm bg-body">
+                <h3 class="h4 text-muted text-xs p-3 m-0">Faturamento no período</h3>
+                <div class="card-body" style="overflow: hidden;">
+                    <div class="chart-container" style="position: relative; height: 280px; width: 100%;">
+                        <canvas id="faturamentoChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Vendas por Categoria -->
+        <div class="col-12 col-lg-6 mb-4">
+            <div class="card card-outline card-info shadow-sm bg-body">
+                <h3 class="h4 text-muted text-xs p-3 m-0">Vendas por categoria</h3>
+                <div class="card-body">
+                    <div class="position-relative" style="height: 280px;">
+                        <canvas id="categoriasChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- FILEIRA 2 DE GRÁFICOS: VENDAS POR DIA E VENDAS POR HORÁRIO -->
+    <div class="row">
+        <!-- Vendas por Dia -->
+        <div class="col-12 col-lg-6 mb-4">
+            <div class="card card-outline card-success shadow-sm bg-body">
+                <h3 class="h4 text-muted text-xs p-3 m-0">Vendas por dia</h3>
+                <div class="card-body">
+                    <div class="position-relative" style="height: 250px;">
+                        <canvas id="vendasDiaChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Vendas por Horário -->
+        <div class="col-12 col-lg-6 mb-4">
+            <div class="card card-outline card-warning shadow-sm bg-body">
+                <h3 class="h4 text-muted text-xs p-3 m-0">Vendas por horário</h3>
+                <div class="card-body">
+                    <div class="position-relative" style="height: 250px;">
+                        <canvas id="vendasHorarioChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- FILEIRA 3 DE GRÁFICOS: 4 DONUTS NA MESMA LINHA -->
+    <div class="row">
+        <!-- 1. Plataformas -->
+        <div class="col-12 col-sm-6 col-lg-3 mb-4">
+            <div class="card card-outline card-secondary shadow-sm bg-body">
+                <h6 class="h5 text-muted text-xs p-2 text-center">Plataformas</h6>
+                <div class="card-body p-2 d-flex align-items-center justify-content-center">
+                    <div style="width: 100%; height: 160px; position: relative;">
+                        <canvas id="plataformasChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. Origem dos Pedidos -->
+        <div class="col-12 col-sm-6 col-lg-3 mb-4">
+            <div class="card card-outline card-secondary shadow-sm bg-body">
+                <h6 class="h5 text-muted text-xs p-2 text-center">Origem dos pedidos</h6>
+                <div class="card-body p-2 d-flex align-items-center justify-content-center">
+                    <div style="width: 100%; height: 160px; position: relative;">
+                        <canvas id="origemChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. Formas de Pagamento -->
+        <div class="col-12 col-sm-6 col-lg-3 mb-4">
+            <div class="card card-outline card-secondary shadow-sm bg-body">
+                <h6 class="h5 text-muted text-xs p-2 text-center">Formas de pagamento</h6>
+                <div class="card-body p-2 d-flex align-items-center justify-content-center">
+                    <div style="width: 100%; height: 160px; position: relative;">
+                        <canvas id="pagamentoChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. Formas de Entrega -->
+        <div class="col-12 col-sm-6 col-lg-3 mb-4">
+            <div class="card card-outline card-secondary shadow-sm bg-body">
+                <h6 class="h5 text-muted text-xs p-2 text-center">Formas de entrega</h6>
+                <div class="card-body p-2 d-flex align-items-center justify-content-center">
+                    <div style="width: 100%; height: 160px; position: relative;">
+                        <canvas id="entregaChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- INICIALIZAÇÃO DO CHART.JS -->
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            
+            // Configurações globais
+            Chart.defaults.font.size = 11;
+            Chart.defaults.responsive = true;
+            Chart.defaults.maintainAspectRatio = false;
+        
+            // Listener para o filtro de período (Mantido funcionalidade nativa)
+            document.getElementById('meuDropdown').addEventListener('change', function() {
+                window.location.href = "?periodo=" + this.value;
+            });
+        
+            // 1. FATURAMENTO NO PERÍODO (Linha)
+            new Chart(document.getElementById('faturamentoChart').getContext('2d'), {
+                type: 'line',
+                data: {
+                    // Filtro alterado para |tojson para ler com segurança as listas do Flask
+                    labels: {{ grafico_meses|tojson }},
+                    datasets: [
+                        {
+                            label: 'Vendas (R$)',
+                            data: {{ grafico_faturamento|tojson }},
+                            borderColor: '#279ffd',
+                            backgroundColor: 'rgba(39, 159, 253, 0.05)',
+                            fill: true,
+                            tension: 0.2
+                        },
+                        {
+                            label: 'Pedidos',
+                            data: {{ grafico_pedidos_qtd|tojson }},
+                            borderColor: '#9966FF',
+                            backgroundColor: 'rgba(153, 102, 255, 0.05)',
+                            tension: 0.2
+                        }
+                    ]
+                },
+                options: {
+                    plugins: {
+                        legend: {
+                          display: true,
+                          position: 'top',
+                          align: 'end',
+                          labels: {
+                            usePointStyle: true,
+                            pointStyle: 'circle',
+                            boxWidth: 8,
+                            boxHeight: 8
+                          }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            border: { display: false },
+                            grid: { display: false }
+                        },
+                        y: {
+                            border: { display: false }
+                        }
+                    },
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            });
+        
+            // 2. VENDAS POR CATEGORIA (Barras)
+            new Chart(document.getElementById('categoriasChart').getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: {{ categorias_labels|tojson }},
+                    datasets: [
+                        {
+                            label: 'Faturamento',
+                            data: {{ categorias_valores|tojson }},
+                            backgroundColor: '#279FFD',
+                            borderRadius: 4,
+                            tension: 0.2
+                        },
+                    ]
+                },
+                options: {
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        x: {
+                            border: { display: false },
+                            grid: { display: false }
+                        },
+                        y: {
+                            border: { display: false }
+                        }
+                    },
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            });
+        
+            // 3. VENDAS POR DIA (Barras)
+            new Chart(document.getElementById('vendasDiaChart').getContext('2d'), {
+                type: 'bar',
+                data: {
+                    // Removidos os colchetes extras externos, pois o Flask já entrega a lista estruturada
+                    labels: {{ dias_labels|tojson }},
+                    datasets: [
+                        {
+                            label: 'Vendas',
+                            data: {{ dias_valores|tojson }},
+                            backgroundColor: '#28a745',
+                            borderRadius: 4,
+                            tension: 0.2
+                        }
+                    ]
+                },
+                options: {
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        x: {
+                            border: { display: false },
+                            grid: { display: false }
+                        },
+                        y: {
+                            border: { display: false }
+                        }
+                    },
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            });
+        
+            // 4. VENDAS POR HORÁRIO (Barras)
+            new Chart(document.getElementById('vendasHorarioChart').getContext('2d'), {
+                type: 'bar',
+                data: {
+                    // Removidos os colchetes extras externos
+                    labels: {{ horarios_labels|tojson }},
+                    datasets: [
+                        {
+                            label: 'Pedidos',
+                            data: {{ horarios_valores|tojson }},
+                            backgroundColor: '#ffc107',
+                            borderRadius: 4,
+                            tension: 0.2
+                        }
+                    ]
+                },
+                options: {
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        x: {
+                            border: { display: false },
+                            grid: { display: false }
+                        },
+                        y: {
+                            border: { display: false }
+                        }
+                    },
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            });
+        });
+    </script>
+
+
+{% endblock %}

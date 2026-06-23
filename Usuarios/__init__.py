@@ -2,9 +2,9 @@ import secrets
 from flask import Blueprint, render_template, redirect, url_for, flash
 from extensions import admin as flask_admin, db, admin_required
 from Usuarios.admin import UserAdminView, RoleAdminView
-from Usuarios.modelos import User, Role
+from Usuarios.models import User, Role
 from flask_security import hash_password
-from Usuarios.formularios import UserForm
+from Usuarios.forms import UserForm
 
 usuarios_bp = Blueprint('usuarios', __name__)
 

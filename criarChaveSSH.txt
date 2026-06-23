@@ -1,0 +1,5 @@
+Abar o Terminal Bash.
+
+Cole o texto abaixo, substituindo o email pelo seu endereço de email.
+
+ssh-keygen -t ed25519 -C "your_email@example.com"

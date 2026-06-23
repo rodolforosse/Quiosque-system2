@@ -1,0 +1,45 @@
+# Ambientes virtuais e dependências
+venv/
+env/
+ENV/
+.env
+.venv
+lib/
+develop-eggs/
+dist/
+build/
+eggs/
+lib64/
+somesite/
+wheels/
+pip-selfcheck.json
+pip-log.txt
+
+# Caches do Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.so
+
+# Banco de dados e sessões
+*.db
+*.sqlite
+*.sqlite3
+.flask_session/
+instance/
+
+# Arquivos de Sistema e IDEs
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.swo
+*.sublime-workspace
+

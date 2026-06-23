@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+
+{% block title %}Página Inicial - MinhaLoja{% endblock %}
+
+{% block content %}
+<div class="p-5 mb-4 bg-white rounded-3 shadow-sm border">
+    <div class="container-fluid py-5 text-center">
+        <h1 class="display-5 fw-bold text-dark mb-3">Bem-vindo à nossa plataforma!</h1>
+        <p class="col-md-8 mx-auto fs-5 text-muted">
+            Este é o ambiente público do seu site desenvolvido em Flask. Os dados exibidos aqui são gerenciados diretamente pelo seu painel administrativo seguro.
+        </p>
+        <a class="btn btn-primary btn-lg fw-bold mt-3" href="{{ url_for('produtos.vitrine_publica') }}">
+            <i class="fa-solid fa-box-open me-2"></i>Ver Catálogo de Produtos
+        </a>
+    </div>
+</div>
+{% endblock %}

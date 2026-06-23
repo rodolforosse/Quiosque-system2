@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+{% block title %}Gerenciar Usuários{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold text-dark">Usuários do Sistema</h2>
+    <a href="{{ url_for('usuarios.criar') }}" class="btn btn-primary fw-bold">
+        <i class="fas fa-plus me-2"></i>Novo Usuário
+    </a>
+</div>
+
+<div class="card shadow-sm border-0 rounded-3">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>ID</th>
+                    <th>E-mail</th>
+                    <th>Staff</th>
+                    <th>Superusuário</th>
+                    <th>Status</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for usuario in usuarios %}
+                <tr>
+                    <td>{{ usuario.id }}</td>
+                    <td class="fw-medium">{{ usuario.email }}</td>
+                    <td>{{ 'Sim' if usuario.is_staff else 'Não' }}</td>
+                    <td>{{ 'Sim' if usuario.is_superuser else 'Não' }}</td>
+                    <td>
+                        <span class="badge {{ 'bg-success' if usuario.active else 'bg-danger' }}">
+                            {{ 'Ativo' if usuario.active else 'Inativo' }}
+                        </span>
+                    </td>
+                    <td>
+                        <a href="#" class="btn btn-sm btn-outline-secondary me-1"><i class="fas fa-edit"></i></a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

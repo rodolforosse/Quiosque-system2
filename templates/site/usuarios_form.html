@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+  <div class="card shadow-sm border-0 rounded-3 p-4">
+      <h3 class="fw-bold text-dark mb-4 text-center">{{ titulo }}</h3>
+
+      <form class="row g-3 needs-validation" method="POST" action="">
+          <!-- Token obrigatório de proteção CSRF do Flask-WTF -->
+          {{ form.hidden_tag() }}
+
+          <!-- Campo: Nome (Ocupa metade da linha em telas médias/grandes) -->
+          <div class="col-12 col-md-6">
+            {{ form.name.label(class="form-label fw-semibold small text-secondary") }}
+            {{ form.name(class="form-control") }}
+          </div>
+      
+          <!-- Campo: Sobrenome (Ocupa a outra metade da linha) -->
+          <div class="col-12 col-md-6">
+            {{ form.surname.label(class="form-label fw-semibold small text-secondary") }}
+            {{ form.surname(class="form-control") }}
+          </div>
+
+          <!-- Campo E-mail -->
+          <div class="col-12 col-md-6 mb-3">
+              {{ form.email.label(class="form-label fw-semibold small text-secondary") }}
+              {{ form.email(class="form-control" + (" is-invalid" if form.email.errors else ""), placeholder="exemplo@dominio.com") }}
+              {% for error in form.email.errors %}
+                  <div class="invalid-feedback">{{ error }}</div>
+              {% endfor %}
+          </div>
+
+          <div class="col-12 col-md-6 mb-3"></div>
+
+          <!-- Campo Senha -->
+          <div class="col-12 col-md-6 mb-3">
+              {{ form.password.label(class="form-label fw-semibold small text-secondary") }}
+              {{ form.password(class="form-control" + (" is-invalid" if form.password.errors else ""), placeholder="••••••••") }}
+              {% for error in form.password.errors %}
+                  <div class="invalid-feedback">{{ error }}</div>
+              {% endfor %}
+          </div>
+
+          <div class="col-12 col-md-6 mb-3"></div>
+
+          <!-- Campo: Repetir Senha -->
+          <div class="col-12 col-md-6">
+            <label for="confirmarSenha" class="form-label">Confirmar Senha</label>
+            <input type="password" class="form-control" id="confirmarSenha" placeholder="••••••••" required>
+            <div class="invalid-feedback" id="erroConfirmarSenha">As senhas não coincidem.</div>
+          </div>
+
+          <div class="col-12 col-md-6 mb-3"></div>
+
+          <!-- Campo Múltipla Seleção de Grupos -->
+          <div class="col-12 col-md-6 mb-3">
+              {{ form.roles.label(class="form-label fw-semibold small text-secondary") }}
+              {{ form.roles(class="form-select", size="4") }}
+              <div class="form-text text-muted small">Segure Ctrl (ou Cmd no Mac) para selecionar mais de um grupo.</div>
+          </div>
+
+          <!-- Checkboxes de Status (Staff, Superuser, Ativo) -->
+          <div class="form-check form-switch mb-2">
+              {{ form.is_staff(class="form-check-input", type="checkbox", id="is_staff") }}
+              {{ form.is_staff.label(class="form-check-label small fw-medium", for="is_staff") }}
+          </div>
+
+          <div class="form-check form-switch mb-2">
+              {{ form.is_superuser(class="form-check-input", type="checkbox", id="is_superuser") }}
+              {{ form.is_superuser.label(class="form-check-label small fw-medium", for="is_superuser") }}
+          </div>
+
+          <div class="form-check form-switch mb-4">
+              {{ form.active(class="form-check-input", type="checkbox", id="active") }}
+              {{ form.active.label(class="form-check-label small fw-medium", for="active") }}
+          </div>
+
+          <!-- Botões de Ação -->
+          <div class="col-12 col-md-6 d-flex justify-content-end gap-2">
+              <a href="{{ url_for('usuarios.listar') }}" class="btn btn-light fw-bold">Cancelar</a>
+              <button type="submit" class="btn btn-primary fw-bold px-4">Salvar Usuário</button>
+          </div>
+      </form>
+  </div>
+
+{% endblock %}

@@ -1,0 +1,14 @@
+{% extends 'admin/base.html' %}
+
+{% block head_css %}
+    {{ super() }}
+    <!-- Injeta o CSS do Bootstrap 5 por cima do tema padrão -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+{% endblock %}
+
+{% block tail_js %}
+    {{ super() }}
+    <!-- Injeta o JavaScript do Bootstrap 5 para garantir o funcionamento de menus e modais -->
+    <script src="https://jsdelivr.net"></script>
+{% endblock %}
+

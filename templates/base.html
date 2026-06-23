@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="pt-br" class="h-100 m-0 p-0">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>{% block title %}Meu Site Oficial{% endblock %}</title>
+            
+        <!-- Ícones Font Awesome Free 6 -->
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+        <!-- favicons -->
+        <!-- <link rel="shortcut icon" href="/static/vendor/adminlte/img/AdminLTELogo.png" type="image/png"> -->
+        <!-- <link rel="icon" href="/static/vendor/adminlte/img/AdminLTELogo.png" sizes="32x32" type="image/png"> -->
+        {% block extrastyle %}{% endblock %}
+    
+        <!-- CSS do Bootstrap 5 -->
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" crossorigin="anonymous">
+
+        <!-- JS do Bootstrap 5 -->
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.min.js" defer></script>
+
+        <style>
+            .bg-dark-menu {
+                background-color: #212529 !important;
+            }
+            
+            /* Animação suave para a rotação da seta do submenu */
+            button[data-bs-toggle="collapse"] .fa-angle-down {
+                transition: transform 0.3s ease;
+                transform: rotate(180deg); /* Seta para cima quando o menu está aberto */
+            }
+
+            /* Quando o menu estiver fechado (o Bootstrap injeta a classe .collapsed), a seta volta ao padrão */
+            button[data-bs-toggle="collapse"].collapsed .fa-angle-down {
+                transform: rotate(0deg); /* Seta para baixo quando fechado */
+            }
+        </style>
+    </head>
+    <body data-admin-utc-offset="-10800" class="bg-light h-100 m-0 p-0 overflow-hidden">
+
+        <!-- CONTAINER ESTRUTURAL PRINCIPAL: row g-0 herdando a altura de 100% (h-100) do body -->
+        <div class="row g-0 w-100 h-100 align-items-stretch m-0 p-0">
+            
+            <!-- NAV: Menu lateral controlado como um Collapse Horizontal Oficial -->
+            <!-- OTIMIZAÇÃO: Trocado bg-dark-menu por bg-dark nativo para garantir o preenchimento de cor correto -->
+            <nav class="collapse collapse-horizontal show bg-dark text-white shadow h-100 col-auto" id="meuMenu" style="z-index: 1020;">
+                <!-- Esta div interna impede o esmagamento dos textos e links enquanto o menu fecha -->
+                <div style="width: 250px;" class="p-2">
+                    
+                    <!-- Topo da Barra Lateral Interna (Marca/Logo) -->
+                    <div class="d-flex align-items-center py-3 px-3 mb-3" style="height: 50px;">
+                        <h5 class="fw-light text-white d-flex align-items-center m-0">
+                            <i class="fas fa-th-large me-2 p-2 bg-white text-dark rounded-circle fs-6 shadow-sm"></i>
+                            <span class="fw-semibold">Frutassa</span>
+                        </h5>
+                    </div>
+    
+                    <!-- Lista de links e submenus -->
+                    <ul class="navbar-nav flex-column w-100">
+                        {% block nav %}
+                            {% for item in menu_items %}
+                                {% if item.children %}
+                                    <!-- Item Pai com Submenu usando o loop.index para gerar IDs únicos (1, 2, 3...) -->
+                                    <li class="nav-item mb-1">
+                                        <!-- Ajustado data-bs-target e aria-controls para loop.index -->
+                                        <button class="btn btn-dark bg-transparent text-white border-0 w-100 text-start d-flex align-items-center justify-content-between py-2 px-3 shadow-none collapsed" 
+                                                type="button" 
+                                                data-bs-toggle="collapse" 
+                                                data-bs-target="#submenu-{{ loop.index }}" 
+                                                aria-expanded="false" 
+                                                aria-controls="submenu-{{ loop.index }}">
+                                            <div>
+                                                <i class="fas fa-{{ item.icon | default('folder') }} me-3 text-center" style="width: 16px;"></i>
+                                                <span>{{ item.name }}</span>
+                                            </div>
+                                            <i class="fas fa-angle-down opacity-50"></i>
+                                        </button>
+                                            
+                                        <!-- Container do Submenu corrigido com ID exclusivo por número de loop -->
+                                        <div class="collapse ps-3 mt-1" id="submenu-{{ loop.index }}">
+                                            <ul class="navbar-nav flex-column border-start border-secondary ps-2 gap-1">
+                                                {% for sub in item.children %}
+                                                    <li class="nav-item">
+                                                        {% if current_user.is_staff %}
+                                                            <a href="{{ url_for(sub.key) if sub.key else '#' }}" class="btn btn-dark bg-transparent border-0 text-white-50 w-100 text-start py-1 px-2 small text-decoration-none shadow-none">
+                                                                <i class="fas fa-{{ sub.icon | default('circle') }} me-2 fa-sm opacity-50"></i>
+                                                                <span>{{ sub.name }}</span>
+                                                            </a>
+                                                        {% else %}
+                                                            <a href="{{ url_for(sub.key) if sub.key else '#' }}" class="btn btn-dark bg-transparent border-0 text-white-50 w-100 text-start py-1 px-2 small text-decoration-none shadow-none">
+                                                                <i class="far fa-circle me-2 fa-sm opacity-50"></i>
+                                                                <span>{{ sub.name }}</span>
+                                                            </a>
+                                                        {% endif %}
+                                                    </li>
+                                                {% endfor %}
+                                            </ul>
+                                        </div>
+                                    </li>
+                                
+                                {% else %}
+                                    <!-- Item Simples -->
+                                    <li class="nav-item mb-1">
+                                        <a href="{{ url_for(item.key) if item.key else '#' }}" class="btn btn-dark bg-transparent border-0 text-white w-100 text-start d-flex align-items-center py-2 px-3 shadow-none">
+                                            <i class="fas fa-{{ item.icon | default('link') }} me-3 text-center" style="width: 16px;"></i>
+                                            <span>{{ item.name }}</span>
+                                        </a>
+                                    </li>
+                                {% endif %}
+                            {% endfor %}
+                        {% endblock %}
+                    
+                    </ul>
+                </div>
+            </nav>
+    
+            <!-- BLOCO DA DIREITA REATIVO: Agrupa o Header, Main e Footer no mesmo container elástico (.col) -->
+            <div class="col d-flex flex-column h-100" style="overflow-y: auto;">
+
+                <!-- HEADER PORTADO PARA FLASK: Barra superior interna alinhada ao lado do menu lateral -->
+                <nav class="navbar navbar-light bg-white border-bottom py-2 px-3 shadow-sm" style="height: 57px; min-height: 57px;">
+                    <div class="container-fluid p-0">
+
+                        <!-- Botão Hambúrguer Oficial (Controla a abertura/fechamento do menu lateral) -->
+                        <button class="navbar-toggler border-0 shadow-none p-1 me-2" type="button" data-bs-toggle="collapse" data-bs-target="#meuMenu" aria-controls="meuMenu" aria-expanded="true" aria-label="Toggle navigation">
+                            <span class="navbar-toggler-icon"></span>
+                        </button>
+                    
+                        <!-- Título Dinâmico da Página (Brand) -->
+                        <h5 class="m-0 fw-bold me-auto">{% block header_title %}{% endblock %}</h5>
+                    
+                        <!-- Painel do Usuário Logado (ADAPTADO PARA FLASK) -->
+                        <div class="d-flex align-items-center me-4">
+                            <a href="#" class="d-block text-muted text-decoration-none small fw-medium">
+                                <i class="fas fa-user-circle me-1"></i> {{ current_user.email | default('Visitante') }}
+                            </a>
+                        </div>
+                    
+                        <!-- Formulário de Logout (ADAPTADO PARA FLASK-SECURITY-TOO) -->
+                        <form action="{{ url_for('security.logout') }}" method="POST" style="display: inline;">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
+                            <button type="submit" class="btn btn-sm text-dark fw-medium px-3 border-0 bg-transparent shadow-none">
+                                <i class="fas fa-sign-out-alt me-1"></i> Sair
+                            </button>
+                        </form>    
+                    </div>
+                </nav>
+            
+                <!-- MAIN: Onde renderiza o Dashboard filho -->
+                <main class="p-2 flex-grow-1">
+                    <div class="container-fluid">
+                        {% block content %}{% endblock %}
+                    </div>
+                </main>
+            
+                <!-- FOOTER: Rodapé micro integrado e fixado perfeitamente na base -->
+                <footer class="d-flex align-items-center justify-content-center border-top text-muted bg-white mt-auto" style="min-height: 25px; height: 25px; font-size: 11px; padding: 0;">
+                    <div class="text-center" style="line-height: 25px;">
+                        <strong>&copy; 2026 <a href="#" class="text-decoration-none text-secondary opacity-75">
+                            Frutassa Cajamar - Bebidas Naturais
+                        </a>.</strong> 
+                        <span class="mx-1 opacity-50">|</span> Todos os direitos reservados.
+                        <span class="d-none d-sm-inline ml-1 opacity-50">(v1.0.0)</span>
+                    </div>
+                </footer>
+            
+            </div> <!-- Fim do bloco da direita reativo -->
+
+    
+        </div> <!-- Fim do container principal -->
+    
+        {% block extra_js %}{% endblock %}
+    
+    </body>
+    
+</html>

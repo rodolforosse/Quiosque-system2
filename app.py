@@ -2,13 +2,19 @@ import secrets
 from flask import Flask
 from extensions import admin, db, security
 from flask_admin.menu import MenuLink
+from flask_wtf.csrf import CSRFProtect
 from flask_security import SQLAlchemyUserDatastore, hash_password
 from Usuarios.admin import SecureAdminIndexView 
 from Produtos import produtos_bp
 from Usuarios import usuarios_bp
 from Dashboard import dashboard_bp
 from Caixa import caixa_bp
+from Pedidos import pedidos_bp
+from api import api_bp
 from Usuarios.models import User, Role
+
+# Objeto de proteção global
+csrf = CSRFProtect()
 
 def create_app():
     app = Flask(__name__)
@@ -28,15 +34,20 @@ def create_app():
 
     db.init_app(app)
     
+    # Inicializa a proteção CSRF no aplicativo
+    csrf.init_app(app)
+    
     admin.init_app(app, index_view=SecureAdminIndexView())
 
     admin.add_link(MenuLink(name='Sair', endpoint='security.logout', category=''))
     
     user_datastore = SQLAlchemyUserDatastore(db, User, Role)
     security.init_app(app, user_datastore)
-    
+   
+    app.register_blueprint(api_bp)
     app.register_blueprint(caixa_bp)
     app.register_blueprint(dashboard_bp)
+    app.register_blueprint(pedidos_bp)
     app.register_blueprint(produtos_bp)
     app.register_blueprint(usuarios_bp)
 
@@ -59,7 +70,7 @@ def create_app():
         lista_final_menus = []
         
         # Coleta os menus de todos os Blueprints registrados
-        for bp_name, blueprint in app.blueprints.items():
+        for _, blueprint in app.blueprints.items():
             if hasattr(blueprint, 'menu_items'):
                 lista_final_menus.extend(blueprint.menu_items)
                 

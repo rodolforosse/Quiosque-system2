@@ -87,7 +87,7 @@ class PointManagement(db.Model):
 
 
 class Register(db.Model):
-    __tablename__ = 'Register'
+    __tablename__ = 'register'
 
     # Vincula o seu manager customizado aqui
     query_class = ManageRecords

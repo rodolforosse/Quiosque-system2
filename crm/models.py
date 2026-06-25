@@ -5,8 +5,8 @@ class Customers(db.Model):
     __tablename__ = 'customers'
 
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(255), nullable=False) # verbose_name="Nome Completo / Razão Social"
-    type = db.Column(db.String(2), default='PF')     # choices=['PF', 'PJ'] tratadas no formulário
+    name = db.Column(db.String(255), nullable=False)
+    type = db.Column(db.String(2), default='PF', nullable=False)
     document = db.Column(db.String(18), default="", nullable=False)
     
     # Contato
@@ -23,6 +23,15 @@ class Customers(db.Model):
 
     def __repr__(self):
         return f"<Customer {self.name}>"
+
+    # Método utilitário para substituir o get_type_display() automático do Django
+    @property
+    def get_type_display(self):
+        opcoes = {
+            'PF': 'Pessoa Física',
+            'PJ': 'Pessoa Jurídica'
+        }
+        return opcoes.get(self.type, self.type)
 
 
 class Employees(db.Model):

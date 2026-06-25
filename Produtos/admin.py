@@ -1,39 +1,39 @@
 # produtos/admin.py
 from Usuarios.admin import SecureModelView
-from Produtos.models import Products, Category
+from Produtos.models import Products, Categories
 
 class CategoryAdminView(SecureModelView):
     column_list = ['id', 'name']
     column_labels = {'id': 'ID', 'name': 'Categoria'}
 
     def __init__(self, session, **kwargs):
-        super(CategoryAdminView, self).__init__(Category, session, **kwargs)
+        super(CategoryAdminView, self).__init__(Categories, session, **kwargs)
 
 
 class ProductsAdminView(SecureModelView):
-    # Oculta campos automáticos de IDs e Datas no formulário de criação
-    form_excluded_columns = ['id', 'created_at', 'updated_at']
+    # 1. Ajuste na listagem de colunas da tabela do admin
+    # Troque 'category_ref' por 'category'
+    column_list = ['id', 'name', 'price', 'category', 'is_active']
     
-    # Define a ordenação padrão por Nome (Equivalente ao ordering = ['name'] do Django)
-    column_default_sort = ('name', False) # False significa ordem Ascendente (A-Z)
-    
-    # Define as colunas visíveis na listagem principal do painel
-    column_list = ['id', 'name', 'price', 'is_active', 'category_ref', 'created_at']
-    
-    # Mapeamento do verbose_name do Django para o Flask-Admin
+    # 2. Ajuste nos rótulos amigáveis (cabeçalhos em português)
     column_labels = {
         'id': 'ID',
-        'name': 'Nome',
+        'name': 'Nome do Produto',
         'price': 'Preço',
+        'category': 'Categoria',  # <-- Ajustado de category_ref para category
         'is_active': 'Ativo',
         'description': 'Descrição',
         'created_at': 'Criado em',
-        'updated_at': 'Atualizado em',
-        'category_ref': 'Categoria' # Lese a referência do relacionamento backref
+        'updated_at': 'Atualizado em'
     }
-    
+
+    # 3. Ajuste nos filtros rápidos ou barra de buscas se houver
+    # Garanta que use apenas propriedades reais do seu modelo (como 'category.name')
     column_searchable_list = ['name']
-    column_filters = ['price', 'is_active', 'category_ref.name']
+    column_filters = ['price','is_active', 'category.name'] 
+    
+    # 4. Ajuste nas colunas do formulário de inserção/edição
+    form_columns = ['name', 'price', 'description', 'category', 'is_active']
 
     def __init__(self, session, **kwargs):
         super(ProductsAdminView, self).__init__(Products, session, **kwargs)

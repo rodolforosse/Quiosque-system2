@@ -1,0 +1,318 @@
+<!-- Modal 1: Formulário Principal de Pedidos (Novo / Edição) -->
+<div class="modal fade" id="modal-pedido" tabindex="-1" aria-labelledby="modalPedidoLabel" aria-hidden="true">
+  <div class="modal-dialog modal-fullscreen">
+    <div class="modal-content h-100 d-flex flex-column overflow-hidden">
+        
+      <!-- Formulário com ID atualizado para sabermos se é POST (Novo) ou PUT/PATCH (Editar) -->
+      <form id="formNovoPedido" method="POST" action="{{ url_for('pedidos.create_view') }}" class="d-flex flex-column h-100 m-0">
+        
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" id="input_json_itens" name="itens_pedido">
+        <input type="hidden" id="input_forma_pagamento" name="forma_pagamento" value="dinheiro">
+        <input type="hidden" id="input_total_geral" name="total_geral" value="0.00">
+        <input type="hidden" id="input_pedido_id_edicao" name="pedido_id_edicao" value="">
+
+        <!-- Cabeçalho Principal -->
+        <div class="modal-header bg-light py-2 px-3 flex-shrink-0">
+          <h5 class="modal-title fw-semibold text-dark fs-6" id="modalPedidoLabel">
+            <i class="fas fa-shopping-basket me-2 text-success"></i>
+            <!-- ADICIONADO: span id para mudar o texto dinamicamente -->
+            <span id="texto-titulo-modal-pedido">Novo Pedido</span>
+          </h5>
+          <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+          
+        <!-- 2. LINHA HORIZONTAL: CANAL DE VENDAS (DELIVERY) -->
+        <div class="bg-white border-bottom py-2 px-3 d-flex align-items-center gap-3 flex-shrink-0">
+          <label for="select_delivery" class="form-label small fw-bold text-muted text-uppercase m-0 text-nowrap">
+            <i class="fas fa-truck-moving me-1 text-primary"></i> Canal de Venda (Delivery)
+          </label>
+          <select id="select_delivery" name="delivery" class="form-select form-select-sm border shadow-none" style="max-width: 250px;" required>
+            <option value="balcao" selected>Balcão</option>
+            <option value="telefone">Telefone</option>
+            <option value="whatsapp">WhatsApp</option>
+            <option value="ifood">iFood</option>
+            <option value="totem">Totem</option>
+            <option value="aplicativo">Aplicativo</option>
+            <option value="site">Site</option>
+          </select>
+        </div>
+        
+        <!-- 3. MODAL CORPO PRINCIPAL (flex-grow-1 faz ele consumir TODO o resto da tela dinamicamente) -->
+        <div class="modal-body p-0 flex-grow-1 overflow-hidden">
+          <div class="row g-0 h-100 flex-nowrap">
+              
+            <!-- COLUNA 1: BARRA LATERAL (BUSCA E CATEGORIAS) -->
+            <div class="col-12 col-md-2 bg-light border-end p-3 d-flex flex-column h-100 overflow-y-auto">
+              <div class="input-group mb-3 flex-shrink-0">
+                <span class="input-group-text bg-white border-end-0"><i class="fas fa-search text-muted"></i></span>
+                <input type="text" class="form-control border-start-0 ps-0 shadow-none" placeholder="Pesquisar produtos..." onkeyup="preencherProdutos()">
+              </div>
+              <div id="modal-categorias" class="list-group list-group-flush shadow-sm rounded flex-grow-1">
+                <!-- Injetado via JS -->
+              </div>
+            </div>
+            
+            <!-- COLUNA 2: ÁREA CENTRAL (VITRINE DE PRODUTOS) -->
+            <div class="col-12 col-md-4 p-3 h-100 overflow-y-auto bg-white border-end">
+              <div id="modal-produtos" class="row g-0">
+                <!-- Injetado via JS -->
+              </div>
+            </div>
+
+            <!-- COLUNA 3: ÁREA DE OPÇÕES (AJUSTES E PAGAMENTOS) -->
+            <div class="col-12 col-md-3 p-3 bg-light h-100 overflow-y-auto">
+              <!-- Bloco Alternador Desconto/Acréscimo Compacto com Botões Alinhados à Esquerda -->
+              <div class="card p-2 mb-2 shadow-sm border-0">
+              
+                  <!-- Removido justify-content-between e adicionado gap-2 com alinhamento à esquerda -->
+                  <div class="d-flex align-items-center gap-2 mb-2">
+                    <div class="btn-group btn-group-sm" role="group">
+                      <input type="radio" class="btn-check" name="tipo_ajuste" id="btn-desconto" data-tipo="desconto" onclick="selecionarDescontoAcrescimo('desconto')" checked="">
+                      <label class="btn btn-outline-primary" for="btn-desconto">Desconto</label>
+                      <input type="radio" class="btn-check" name="tipo_ajuste" id="btn-acrescimo" data-tipo="acrescimo" onclick="selecionarDescontoAcrescimo('acrescimo')">
+                      <label class="btn btn-outline-primary" for="btn-acrescimo">Acréscimo</label>
+                    </div>
+                    
+                    <div class="btn-group btn-group-sm" role="group">
+                      <input type="radio" class="btn-check" name="modo_valor" id="btn-modo-valor" data-modo="dinheiro" onclick="toggleModoValor()" checked="">
+                      <label class="btn btn-outline-primary" for="btn-modo-valor">R$</label>
+                      <input type="radio" class="btn-check" name="modo_valor" id="btn-modo-porcento" data-modo="porcentagem" onclick="toggleModoValor()">
+                      <label class="btn btn-outline-primary" for="btn-modo-porcento">%</label>
+                    </div>
+                  </div>
+              
+                  <!-- Mantido o form-floating compactado e sem bordas (apenas linha inferior) -->
+                  <div class="form-floating mt-1" style="min-height: 42px; height: 42px;">
+                    <input type="text" id="addPedido_descInput" name="valor_ajuste" 
+                           class="form-control shadow-none border-0 border-bottom rounded-0 fw-semibold text-dark ps-1 bg-transparent" 
+                           placeholder="0,00" 
+                           oninput="atualizarTotalRevisao()"
+                           style="height: 42px; min-height: 42px; padding-top: 18px; padding-bottom: 4px; font-size: 0.95rem; border-color: #dee2e6 !important;"
+                           onfocus="this.style.borderColor='#0d6efd'"
+                           onblur="this.style.borderColor='#dee2e6'">
+                  
+                    <label id="label-dinamico-valor" for="addPedido_descInput" 
+                           class="text-muted text-uppercase fw-semibold" 
+                           style="padding: 10px 4px; font-size: 0.8rem; transform-origin: 0 0; transition: opacity .1s ease-in-out, transform .1s ease-in-out;">
+                      Valor
+                    </label>
+                  </div>
+                </div>
+
+
+
+              <!-- Formas de Pagamento -->
+              <div class="mb-3">
+                <label class="form-label small fw-bold text-muted text-uppercase">Forma de Pagamento</label>
+                <div class="row g-2">
+                  <div class="col-6"><button class="btn btn-outline-dark w-100 btn-pagamento py-2 shadow-none" data-pagamento="dinheiro" type="button" onclick="setFormaPagamento('dinheiro')"><i class="fas fa-money-bill-wave me-1"></i> Dinheiro</button></div>
+                  <div class="col-6"><button class="btn btn-outline-dark w-100 btn-pagamento py-2 shadow-none" data-pagamento="debito" type="button" onclick="setFormaPagamento('debito')"><i class="fas fa-credit-card me-1"></i> Débito</button></div>
+                  <div class="col-6"><button class="btn btn-outline-dark w-100 btn-pagamento py-2 shadow-none" data-pagamento="credito" type="button" onclick="setFormaPagamento('credito')"><i class="fas fa-credit-card me-1"></i> Crédito</button></div>
+                  <div class="col-6"><button class="btn btn-outline-dark w-100 btn-pagamento py-2 shadow-none" data-pagamento="credito" type="button" onclick="setFormaPagamento('credito')"><i class="fas fa-credit-card me-1"></i> Voucher</button></div>
+                  <div class="col-6"><button class="btn btn-outline-dark w-100 btn-pagamento py-2 shadow-none" data-pagamento="pix" type="button" onclick="setFormaPagamento('pix')"><i class="fab fa-pix me-1"></i> PIX</button></div>
+                </div>
+              </div>
+
+              <!-- Seção de Pagamentos Dinâmicos -->
+              <div id="secao-pagamentos" class="card p-3 mb-3 border-danger bg-light" style="display: none;">
+                <div class="d-flex justify-content-between mb-2 text-danger fw-bold">
+                  <span>Falta pagar:</span>
+                  <span id="falta-pagar-valor">R$ 0,00</span>
+                </div>
+                <div id="lista-pagamentos" class="d-flex flex-column gap-1 mb-2 overflow-auto" style="max-height: 120px;">
+                  <!-- Inserido dinamicamente via JS -->
+                </div>
+                <a href="#" onclick="removepagamentos()" class="text-danger small text-decoration-underline">Remover todos</a>
+              </div>
+
+              <!-- Observações e Documentos -->
+              <div class="form-floating mb-3">
+                <input type="text" id="AddObs" name="observation" class="form-control shadow-none" placeholder="Obs">
+                <label for="AddObs">Observação do pedido</label>
+              </div>
+              <div class="form-floating mb-3">
+                <input type="text" id="AddCPF-CNPJ" name="documento_cliente" class="form-control shadow-none" placeholder="CPF">
+                <label for="AddCPF-CNPJ">CPF/CNPJ na Nota</label>
+              </div>
+
+              <button class="btn btn-success w-100 py-2 fw-bold shadow-sm rounded-0" onclick="enviarPedidoFormulario()" type="button">
+                <i class="fas fa-save me-2"></i>Salvar Pedido
+              </button>
+            </div>
+
+            <!-- COLUNA 4: REVISÃO DO PEDIDO (DIREITA) -->
+            <div class="col-12 col-md-3 bg-white p-3 d-flex flex-column justify-content-between h-100 overflow-hidden">
+              <div class="d-flex flex-column overflow-hidden">
+                <h6 class="fw-bold text-muted border-bottom pb-2 mb-3 text-uppercase small flex-shrink-0">Revisar Pedido</h6>
+                <div id="itens-revisar" class="overflow-y-auto flex-grow-1 mb-3">
+                  <p id="msg-pedido-vazio" style="color: #888; font-style: italic; text-align: center; padding: 10px; margin: 0;">
+                    Nenhum item adicionado
+                  </p>
+                </div>
+              </div>
+              
+              <div class="border-top pt-3 p-3 rounded flex-shrink-0">
+                <div class="d-flex justify-content-between align-items-center text-dark">
+                  <span class="fw-bold small">TOTAL:</span>
+                  <h4 id="total-pedido-valor" class="fw-black text-success m-0">R$ 0,00</h4>
+                </div>
+              </div>
+            </div>
+          </div> 
+        </div>   
+      </form> 
+    </div>
+  </div>
+</div>
+
+<!-- Modal 2: Acompanhamento do Pedido-->
+<div class="modal fade" id="status-pedido" tabindex="-1" aria-labelledby="modalPedidoLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" style="max-width: 650px;">
+    <div class="modal-content rounded-3 shadow border-0 overflow-hidden">
+        
+      <!-- Campo oculto para controle de ID via JS -->
+      <input type="hidden" id="modal-pedido-id-real" value="">
+
+      <!-- Cabeçalho do Modal Compacto -->
+      <div class="modal-header bg-light border-bottom py-2 px-3">
+        <h6 class="modal-title fw-bold text-dark m-0" id="modalPedidoLabel">
+          <i class="fas fa-box-open text-primary me-2"></i>Detalhes do Pedido #<span id="modal-id-pedido">1000000</span>
+        </h6>
+        <button type="button" class="btn-close shadow-none small" data-bs-dismiss="modal" aria-label="Close" style="font-size: 0.75rem;"></button>
+      </div>
+      
+      <!-- Corpo do Modal -->
+      <div class="modal-body p-3">
+          
+        <!-- 1. Barra de Ações Superior (Botão Editar Pedido) -->
+        <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
+          <!-- Botão de Edição de Dados à Esquerda -->
+          <button type="button" class="btn btn-sm btn-primary d-flex align-items-center gap-1.5 px-2.5" onclick="abrirEdicaoPedido()">
+            <i class="fas fa-edit small"></i> Editar Pedido
+          </button>
+          
+          <!-- Botões Financeiros e de Impressão à Direita -->
+          <div class="d-flex gap-1.5">
+            <button type="button" id="btn-registrar-pagamento" class="btn btn-outline-success btn-sm d-flex align-items-center gap-1 px-2" onclick="marcarComoPago()">
+              <i class="fas fa-dollar-sign"></i> Pagar
+            </button>
+            <button type="button" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1 px-2" onclick="imprimirPedido()">
+              <i class="fas fa-print"></i> Imprimir
+            </button>
+          </div>
+        </div>
+        
+        <!-- 2. Linha do Tempo Horizontal Compacta (Corrigido: Barra presa estritamente entre as bordas dos círculos) -->
+        <div class="mb-4 mt-2 position-relative" style="padding: 0 16px;">
+          
+          <!-- BARRA CINZA DE FUNDO: Recuada 16px de cada lado para nascer e morrer colada na face dos círculos -->
+          <div class="position-absolute bg-secondary opacity-25" style="height: 4px; top: 16px; left: 60px; right: 80px; z-index: 1;"></div>
+          
+          <!-- BARRA COLORIDA DE PROGRESSO: Segue o mesmo trilho sem transpassar as extremidades -->
+          <div id="barra-progresso-modal" class="position-absolute bg-primary" style="height: 4px; top: 16px; left: 60px; width: 0%; z-index: 2; transition: all 0.4s ease;"></div>
+        
+          <!-- Contêiner dos Nós alinhado por cima das barras (z-index: 3) -->
+          <div class="d-flex justify-content-between align-items-center position-relative" style="z-index: 3;">
+          
+            <!-- Etapa 1: Realizado (R) -->
+            <div class="text-center flex-grow-1 step-node" id="step-recebido" data-status="R" style="cursor: pointer;">
+              <!-- Retornado ao tamanho original destacado de 32px x 32px -->
+              <div class="step-icon rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center mx-auto shadow-sm" style="width: 32px; height: 32px; transition: all 0.3s; font-size: 0.85rem;">
+                <i class="fas fa-shopping-cart"></i>
+              </div>
+              <div class="fw-bold text-muted small mt-2 step-label" style="font-size: 0.75rem;">Realizado</div>
+            </div>
+          
+            <!-- Etapa 2: Em Preparação (EP) -->
+            <div class="text-center flex-grow-1 step-node" id="step-preparacao" data-status="EP" style="cursor: pointer;">
+              <div class="step-icon rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center mx-auto" style="width: 32px; height: 32px; transition: all 0.3s; font-size: 0.85rem;">
+                <i class="fas fa-clock"></i>
+              </div>
+              <div class="fw-semibold text-muted small mt-2 step-label" style="font-size: 0.75rem;">Em Preparo</div>
+            </div>
+          
+            <!-- Etapa 3: Pronto para Retirada (PR) -->
+            <div class="text-center flex-grow-1 step-node" id="step-entrega" data-status="PR" style="cursor: pointer;">
+              <div class="step-icon rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center mx-auto" style="width: 32px; height: 32px; transition: all 0.3s; font-size: 0.85rem;">
+                <i class="fas fa-store"></i>
+              </div>
+              <div class="fw-semibold text-muted small mt-2 step-label" style="font-size: 0.75rem;">Pronto p/ Retirada</div>
+            </div>
+          
+            <!-- Etapa 4: Finalizado (F) -->
+            <div class="text-center flex-grow-1 step-node" id="step-finalizado" data-status="F" style="cursor: pointer;">
+              <div class="step-icon rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center mx-auto" style="width: 32px; height: 32px; transition: all 0.3s; font-size: 0.85rem;">
+                <i class="fas fa-check"></i>
+              </div>
+              <div class="fw-semibold text-muted small mt-2 step-label" style="font-size: 0.75rem;">Finalizado</div>
+            </div>
+          
+            <!-- Etapa 5: Cancelado (C) -->
+            <div class="text-center flex-grow-1 step-node" id="step-cancelado" data-status="C" style="cursor: pointer;">
+              <div class="step-icon rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center mx-auto" style="width: 32px; height: 32px; transition: all 0.3s; font-size: 0.85rem;">
+                <i class="fas fa-times"></i>
+              </div>
+              <div class="fw-semibold text-muted small mt-2 step-label" style="font-size: 0.75rem;">Cancelado</div>
+            </div>
+          
+          </div>
+        </div>
+
+        <!-- 3. Resumo do Cliente e Pagamento -->
+        <div class="row bg-light rounded py-2 px-1 mb-2 mx-0 border" style="font-size: 0.82rem;">
+          <div class="col-4">
+            <span class="text-muted d-block" style="font-size: 0.7rem;">Cliente:</span>
+            <strong class="text-dark" id="modal-cliente-pedido">Ronaldo</strong>
+          </div>
+          <div class="col-4">
+            <span class="text-muted d-block" style="font-size: 0.7rem;">Celular:</span>
+            <span class="text-dark" id="modal-celular-pedido">(11) 99999-9999</span>
+          </div>
+          <div class="col-4">
+            <span class="text-muted d-block" style="font-size: 0.7rem;">Pagamento:</span>
+            <div id="container-status-pagamento" class="d-flex align-items-center" style="min-height: 18px;"></div>
+          </div>
+        </div>
+
+        <!-- 4. Observação do Pedido -->
+        <div class="bg-light rounded p-2 mb-3 mx-0 border border-warning" style="background-color: #fffdf5 !important; font-size: 0.8rem;">
+          <span class="text-warning-dark fw-bold d-block mb-0.5" style="font-size: 0.72rem;">
+            <i class="fas fa-exclamation-circle me-1"></i>Observações
+          </span>
+          <p class="text-dark mb-0 lh-sm" id="modal-observacao-pedido">
+            Nenhuma observação informada.
+          </p>
+        </div>
+
+        <!-- 5. Tabela de Itens em Altura Reduzida (Cabeçalho "Itens Inclusos" removido completamente) -->
+        <div class="border rounded shadow-sm overflow-hidden mb-3">
+          <div class="table-responsive" style="max-height: 160px; overflow-y: auto;">
+            <table class="table table-hover align-middle mb-0 text-nowrap" id="tableModalItens" style="font-size: 0.82rem;">
+              <thead class="table-light fs-7 text-muted text-uppercase" style="font-size: 0.7rem;">
+                <tr>
+                  <th scope="col" class="ps-3 py-1">Produto</th>
+                  <th scope="col" class="text-center py-1" style="width: 80px;">Qtd</th>
+                  <th scope="col" class="text-end py-1" style="width: 100px;">Vlr. Unit.</th>
+                  <th scope="col" class="text-end pe-3 py-1" style="width: 100px;">Subtotal</th>
+                </tr>
+              </thead>
+              <tbody id="modal-itens-tbody" class="text-dark small">
+                <!-- Injetado dinamicamente via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 6. Total Geral Formatado Compacto -->
+        <div class="d-flex justify-content-end align-items-center pe-2">
+          <div class="d-flex align-items-center gap-2">
+            <span class="text-muted text-uppercase fw-bold" style="font-size: 0.72rem;">Total do Pedido:</span>
+            <strong class="text-success fs-5 fw-bold" id="modal-total-pedido">R$ 0,00</strong>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>

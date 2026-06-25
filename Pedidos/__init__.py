@@ -1,12 +1,13 @@
 from flask import Blueprint, render_template
-from extensions import admin as flask_admin, db, admin_required
+from extensions import admin_required
+from sqlalchemy.orm import joinedload
 from Pedidos.admin import OrdersAdminView
-from Pedidos.models import Orders
+from Pedidos.models import Orders, OrderItems
 
 # Cria o blueprint de produtos
-produtos_bp = Blueprint('dashboard', __name__)
+pedidos_bp = Blueprint('pedidos', __name__)
 
-produtos_bp.menu_items = [
+pedidos_bp.menu_items = [
     {
         'key': 'pedidos.create_view',
         'name': 'Pedidos',
@@ -17,15 +18,13 @@ produtos_bp.menu_items = [
 
 ]
 
-# 2. ROTA PÚBLICA: Vitrine de Produtos (ex: http://127.0.01/produtos)
-@produtos_bp.route('/pedidos')
+
+
+@pedidos_bp.route('/pedidos')
 @admin_required()
 def create_view():
-    # Busca todos os produtos salvos no banco de dados SQLite
-    lista_de_produtos = Orders.query.all()
-    # Envia a lista para dentro do arquivo HTML mapeado
-    return render_template('site/pedidos.html', pedidos=None)
-
-# Usamos o 'flask_admin' registrar a View
-flask_admin.add_view(OrdersAdminView(db.session))
+    # Carrega todos os pedidos trazendo os dados do cliente acoplados na mesma consulta
+    pedidos = Orders.query.options(joinedload(Orders.customer)).order_by(Orders.id.desc()).all()
+    
+    return render_template('site/pedidos.html', pedidos=pedidos)
 

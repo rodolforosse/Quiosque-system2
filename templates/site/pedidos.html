@@ -3,7 +3,1273 @@
 {% block title %}Pedidos{% endblock %}
 
 {% block content %}
+    <div class="container-fluid bg-white p-4" style="min-height: calc(100vh - 102px);">
 
+        <!-- 1. MENSAGENS DE ALERTA DO FLASK -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <!-- Mapeia categorias do Flask (como 'error') para classes do Bootstrap (como 'danger') -->
+                    <div class="alert alert-dismissible fade show alert-{% if category == 'error' %}danger{% else %}{{ category }}{% endif %}" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <!-- 2 e 3. MODAIS DE PEDIDO (Ajustado para o padrão Jinja2) -->
+        {% with id="modal-pedido" %}
+            {% include "components/_modals-order.html" %}
+        {% endwith %}
+                
+        {% with id="status-pedido" %}
+            {% include "components/_modals-order.html" %}
+        {% endwith %}
+
+        <!-- Barra de Ações: Botão Novo Pedido e Barra de Pesquisa -->
+        <div class="d-flex align-items-center justify-content-between gap-3 mb-4">
+        
+            <!-- Botão Novo Pedido -->
+            <button type="button" class="btn btn-success shadow-sm rounded-0 w-40 text-nowrap"
+                data-bs-toggle="modal" 
+                data-bs-target="#modal-pedido"
+                onclick="DataUpdate()">
+                <i class="fas fa-plus me-2"></i> Novo Pedido
+            </button>
+        
+            <!-- Barra de Pesquisa -->
+            <div class="input-group w-50" style="max-width: 350px;">
+                <input type="text"
+                      id="pesquisa-pedidos" 
+                      class="form-control border-end-0 shadow-none" 
+                      placeholder="Pesquisar" 
+                      aria-label="Pesquisar"
+                      onkeyup="filtrarItens(this, 'TbOrders')">
+                <span class="input-group-text bg-white border-start-0 text-muted">
+                    <i class="fas fa-search"></i>
+                </span>
+            </div>
+        
+        </div>
+
+        <!-- Tabela de Pedidos -->
+        <div class="card shadow-sm border-0">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0 text-nowrap" id="TbOrders">
+                        <thead class="table-light text-uppercase fs-7 text-muted border-bottom rounded-0">
+                            <tr>
+                                <th scope="col" class="ps-3" style="width: 40px;">
+                                    <div class="form-check">
+                                        <input type="checkbox" class="form-check-input" data-mark-full="pedidos" style="transform: scale(1.2);">
+                                    </div>
+                                </th>
+                                <th scope="col" class="sorting user-select-none" onclick="ordenar(1)" style="cursor: pointer;">Data</th>
+                                <th scope="col" class="sorting user-select-none" onclick="ordenar(2)" style="cursor: pointer;">Pedido#</th>
+                                <th scope="col" class="sorting user-select-none d-none d-lg-table-cell" onclick="ordenar(3)" style="cursor: pointer;">Entrega</th>
+                                <th scope="col" class="sorting user-select-none" onclick="ordenar(4)" style="cursor: pointer;">Status</th>
+                                <th scope="col" class="sorting user-select-none" onclick="ordenar(5)" style="cursor: pointer;">Cliente</th>
+                                <th scope="col" class="sorting user-select-none" onclick="ordenar(6)" style="cursor: pointer;">Total</th>
+                                <th scope="col" class="sorting user-select-none d-none d-xl-table-cell" onclick="ordenar(7)" style="cursor: pointer;">Celular</th>
+                                <th scope="col" class="sorting user-select-none d-none d-lg-table-cell" onclick="ordenar(8)" style="cursor: pointer;">Endereço</th>
+                                <th scope="col" class="sorting user-select-none d-none d-lg-table-cell pe-3" onclick="ordenar(9)" style="cursor: pointer;">Bairro</th>
+                            </tr>
+                        </thead>
+                        <tbody id="pedidos-tbody" class="text-dark">
+                          {% set nomes_status = {
+                            'R': 'Realizado',
+                            'EP': 'Em Preparação',
+                            'PR': 'Pronto p/ Retirada',
+                            'F': 'Finalizado',
+                            'C': 'Cancelado'
+                          } %}
+                        
+                          {% if pedidos %}
+                            {% for pedido in pedidos %}
+                              <tr onclick="carregarEDispararModal('{{ pedido.id }}', '{{ pedido.status }}')" data-visual-id="{{ pedido.order_id }}" style="cursor: pointer;">
+                                <td class="ps-3" onclick="event.stopPropagation();">
+                                  <div class="form-check">
+                                    <input type="checkbox" class="form-check-input" data-group="pedidos" data-id="{{ pedido.id }}" style="transform: scale(1.2);">
+                                  </div>
+                                </td>
+                                <td data-field="created_at" data-original="{{ pedido.created_at.strftime('%H:%M:%S') if pedido.created_at else '' }}" class="small">
+                                  {{ pedido.created_at.strftime('%H:%Mh %d/%m') if pedido.created_at else '' }}
+                                </td>
+                                <td data-field="order_id" data-original="{{ pedido.order_id }}" class="small">
+                                  <span class="fw-medium text-black">{{ pedido.order_id }}</span>
+                                </td>
+                                <td data-field="delivery" data-original="{{ pedido.delivery }}" class="d-none d-lg-table-cell small">
+                                  {{ pedido.delivery }}
+                                </td>
+                                
+                                <td data-field="status" data-original="{{ pedido.status }}">
+                                  <span class="badge 
+                                    {% if pedido.status == 'F' %}bg-success
+                                    {% elif pedido.status == 'C' %}bg-danger
+                                    {% elif pedido.status == 'EP' %}bg-primary
+                                    {% elif pedido.status == 'PR' %}bg-purple
+                                    {% else %}bg-warning text-white{% endif %} px-2 py-1 small">
+                                    {{ nomes_status.get(pedido.status, pedido.status) }}
+                                  </span>
+                                </td>
+                                
+                                <td data-field="customer" data-original="{{ pedido.customer.name if pedido.customer else '' }}" class="small text-truncate" style="max-width: 150px;">
+                                  {{ pedido.customer.name if pedido.customer else '' }}
+                                </td>
+                                <td data-field="total_value" data-original="{{ pedido.total_value }}" class="small">
+                                  R$ {{ "%.2f"|format(pedido.total_value) }}
+                                </td>
+                                <td data-field="phone" data-original="{{ pedido.customer.phone if pedido.customer else '' }}" class="d-none d-xl-table-cell text-muted small">
+                                  {{ pedido.customer.phone if pedido.customer else '' }}
+                                </td>
+                                <td data-field="address" data-original="{{ pedido.customer.address if pedido.customer else '' }}" class="d-none d-lg-table-cell text-truncate text-muted small" style="max-width: 200px;">
+                                  {{ pedido.customer.address if pedido.customer else '' }}
+                                </td>
+                                <td data-field="district" data-original="{{ pedido.customer.district if pedido.customer else '' }}" class="d-none d-lg-table-cell text-muted small pe-3">
+                                  {{ pedido.customer.district if pedido.customer else '' }}
+                                </td>
+                                
+                              </tr>
+                            {% endfor %}
+                          {% else %}
+                            <tr>
+                              <td colspan="10" class="text-center text-muted py-5">
+                                <div class="py-3">
+                                  <i class="fas fa-inbox fs-2 mb-2 text-secondary opacity-50"></i>
+                                  <p class="mb-0">Nenhum pedido encontrado no sistema.</p>
+                                </div>
+                              </td>
+                            </tr>
+                          {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
 {% endblock %}
 {% block extra_js %}
+  <script>
+    // Variáveis globais
+    let listaProdutosGeral = [];
+    let listaCategoriasGeral = [];
+    let categoriaSelecionadaId = null;
+    
+    /* ====================== REORDENAR COLUNAS DE TABELAS ===================== */
+    
+    function ordenar(colunaIndex) {
+      const tabela = document.querySelector("table");
+      const linhas = Array.from(tabela.rows).slice(1); // Pega as linhas ignorando o cabeçalho
+      const direcao = tabela.dataset.dir === "asc" ? -1 : 1;
+      linhas.sort((a, b) => {
+        const valA = a.cells[colunaIndex].innerText.toLowerCase();
+        const valB = b.cells[colunaIndex].innerText.toLowerCase();
+        return valA.localeCompare(valB) * direcao;
+      });
+  
+      tabela.dataset.dir = direcao === 1 ? "asc" : "desc";
+      linhas.forEach(linha => tabela.tBodies[0].appendChild(linha));
+    }
+    
+    // 1. Busca os dados de produtos e categorias nas APIs do Flask
+    async function DataUpdate() {
+      try {
+        // URLs corrigidas sem a barra "/" no final (Padrão de API do Flask)
+        const resCategorias = await fetch('/api/categorias');
+        listaCategoriasGeral = await resCategorias.json();
+  
+        const resProdutos = await fetch('/api/produtos');
+        listaProdutosGeral = await resProdutos.json();
+  
+        // Renderiza as categorias e produtos na tela pela primeira vez
+        renderizarCategorias();
+        preencherProdutos();
+      } catch (error) {
+          console.error("Erro ao carregar dados das APIs do Flask:", error);
+      }
+    }
+
+    // 2. Renderiza a lista de botões/links de categorias na Sidebar do Modal
+    function renderizarCategorias() {
+      const containerCategorias = document.getElementById("modal-categorias");
+      if (!containerCategorias) return;
+    
+      let html = "";
+    
+      listaCategoriasGeral.forEach(cat => {
+          // Geramos um ID limpo para usar como âncora no scroll (ex: cat-1, cat-5)
+          // Dica Flask: Certifique-se de que sua rota Python envie o campo como "name" (cat.name)
+          html += `
+            <div class="categoria-item" 
+              onclick="rolarParaCategoria('cat-${cat.id}', event)" 
+              style="cursor:pointer; padding: 10px; margin-bottom:5px; border-radius:4px; transition: background 0.2s;">
+              ${cat.name}
+            </div>
+          `;
+      });
+    
+      containerCategorias.innerHTML = html;
+    }
+    
+    // 3. Função que faz o scroll (rolagem) suave até o título da categoria desejada
+    // Adicionado o parâmetro 'e' para capturar o evento do clique de forma segura
+    function rolarParaCategoria(idElemento, e) {
+      const elementoAlvo = document.getElementById(idElemento);
+    
+      if (elementoAlvo) {
+          // Rola a área de produtos de forma suave até o título da categoria
+          elementoAlvo.scrollIntoView({ 
+            behavior: "smooth", 
+            block: "start" 
+          });
+    
+          // Opcional: Destaca brevemente visualmente o link da categoria clicada
+          const itens = document.querySelectorAll(".categoria-item");
+          itens.forEach(item => item.style.backgroundColor = "transparent");
+    
+          // Corrigido de event.currentTarget para e.currentTarget para evitar erros de escopo global
+          if (e && e.currentTarget) {
+            e.currentTarget.style.backgroundColor = "#e0e0e0";
+          }
+        }
+    }
+
+    // 4. Modificado para exibir produtos
+    function preencherProdutos() {
+      const containerProdutos = document.getElementById("modal-produtos");
+      const campoBusca = document.querySelector(".form-control[placeholder*='Pesquisar produtos']");
+      if (!containerProdutos) return;
+    
+      const termoBusca = campoBusca ? campoBusca.value.toLowerCase().trim() : "";
+    
+      const produtosFiltrados = listaProdutosGeral.filter(produto => {
+        return (produto.name && produto.name.toLowerCase().includes(termoBusca)) || 
+               (produto.description && produto.description.toLowerCase().includes(termoBusca));
+      });
+    
+      if (produtosFiltrados.length === 0) {
+        containerProdutos.innerHTML = "<p style='padding: 15px; color: gray;'>Nenhum produto encontrado.</p>";
+        return;
+      }
+    
+      const produtosAgrupados = {};
+      produtosFiltrados.forEach(produto => {
+        const idCat = produto.categoria_id || "sem-categoria";
+        if (!produtosAgrupados[idCat]) {
+          produtosAgrupados[idCat] = {
+            nome: produto.categoria_nome || "Sem Categoria",
+            itens: []
+          };
+        }
+        produtosAgrupados[idCat].itens.push(produto);
+      });
+    
+      let html = "";
+    
+      for (const [idCategoria, dadosCategoria] of Object.entries(produtosAgrupados)) {
+        // Cabeçalho da seção de categorias em Azul, igual ao "SUCOS" da imagem
+        html += `
+          <div id="cat-${idCategoria}" class="grupo-categoria-modal w-100" style="margin-bottom: 15px; scroll-margin-top: 15px;">
+            <h6 style="margin: 10px 0 8px 0; font-size: 0.85rem; color: #66686a; text-transform: uppercase; font-weight: 700; letter-spacing: 1px;">
+              ${dadosCategoria.nome}
+            </h6>
+            <div style="height: 1.5px; background-color: #7a7a7a; width: 100%; margin-bottom: 0;"></div>
+            <div class="lista-produtos-grupo">
+        `;
+            
+        dadosCategoria.itens.forEach((produto) => {
+          const precoFormatado = Number(produto.price || produto.preco || 0).toFixed(2).replace('.', ',');
+
+          // Simulação do código do produto (Ex: F30, F31) baseado no ID ou em campo personalizado
+          const codigoBadge = produto.codigo || `F${produto.id}`;
+
+          // Simulação de imagem de miniatura (caso tenha no banco, use produto.imagem_url)
+          const imagemMiniatura = "/static/images/suco_placeholder.png";
+        
+          // HTML estruturado em linha horizontal idêntico à foto
+          html += `
+            <div class="card-produto-linha d-flex align-items-center justify-content-between py-2 border-bottom text-decoration-none" 
+                 onclick="adicionarProdutoAoPedidoById('${produto.id}')"
+                 style="cursor: pointer; transition: background 0.2s; min-height: 48px;">
+
+              <!-- Lado Esquerdo: Imagem, Código e Nome com Link Sublinhado -->
+              <div class="d-flex align-items-center gap-2 flex-grow-1 text-truncate">
+                <!-- Quadrado de Imagem Laranja da foto -->
+                <div style="width: 38px; height: 26px; background-color: #ff7900; border-radius: 4px; display: flex; align-items: center; justify-content: center; overflow: hidden; flex-shrink: 0;">
+                  <i class="fas fa-glass-martini-alt text-white-50" style="font-size: 0.75rem;"></i>
+                </div>
+
+                <!-- Nome do Produto Sublinhado Leve -->
+                <span class="text-dark small text-truncate" style="font-size: 0.88rem; border-bottom: 1px dotted #999; line-height: 1.2;">
+                  ${produto.name}
+                </span>
+              </div>
+            
+              <!-- Lado Direito: Preço em Azul e Botão de Adição Circular (+) -->
+              <div class="d-flex align-items-center gap-2 flex-shrink-0 ps-2">
+                <span class="fw-bold" style="color: #66686a; font-size: 0.88rem;">
+                  R$${precoFormatado}
+                </span>
+                <!-- Ícone do botão mais (+) vazado em círculo idêntico à imagem -->
+                <i class="bi bi-plus-circle"></i>
+              </div>
+            
+            </div>
+          `;
+        });
+      
+        html += `
+            </div>
+          </div>
+        `;
+      }
+    
+      containerProdutos.innerHTML = html;
+    }
+
+  
+    // 5. Função acionada quando o usuário clica em um card de produto
+    function adicionarProdutoAoPedidoById(id) {
+      console.log("[DEBUG] ID enviado pelo clique do card:", id);
+
+      // O uso de == realiza a comparação flexível (ex: '1' == 1 retorna true nos bastidores)
+      const produtoEncontrado = listaProdutosGeral.find(p => p.id == id);
+
+      console.log("[DEBUG] Objeto localizado na lista global:", produtoEncontrado);
+    
+      if (produtoEncontrado) {
+        // Se localizou o objeto na memória do JavaScript, repassa ao carrinho
+        adicionarProdutoAoPedido(produtoEncontrado);
+      } else {
+        console.warn("[AVISO] Produto ID " + id + " não foi localizado na memória global do JavaScript.");
+
+        // FALLBACK DE SEGURANÇA IMEDIATO: Se a busca na memória falhar por frações de segundos,
+        // o JavaScript reconstrói o objeto lendo os dados textuais direto do card do HTML que foi clicado.
+        // Isso blinda o seu PDV e impede que o clique fique "morto".
+        const cardClicado = event?.currentTarget || document.activeElement;
+        if (cardClicado) {
+          const nomeDoCard = cardClicado.querySelector('span.text-dark')?.innerText || "Produto";
+          const precoTexto = cardClicado.querySelector('span.fw-bold')?.innerText || "R$ 0,00";
+          const precoDoCard = parseFloat(precoTexto.replace('R$', '').replace(/\./g, '').replace(',', '.').trim()) || 0.00;
+
+          adicionarProdutoAoPedido({
+            id: id,
+            name: nomeDoCard,
+            price: precoDoCard
+          });
+        }
+      }
+    }
+
+    // 2. CORREÇÃO DO CARRINHO: Garante que as propriedades usem o mapeamento correto da API do Flask
+    function adicionarProdutoAoPedido(produto) {
+      const containerRevisao = document.getElementById("itens-revisar");
+      if (!containerRevisao) return;
+    
+      // Remove o aviso de "Nenhum item adicionado" se ele ainda estiver na tela
+      const mensagemVazio = document.getElementById("msg-pedido-vazio");
+      if (mensagemVazio) {
+        mensagemVazio.remove();
+      }
+    
+      const produtoId = produto.id;
+      // Lê tanto chaves em inglês quanto em português enviadas pelo Flask para evitar o 'undefined'
+      const produtoNome = produto.name || produto.nome || "Produto sem Nome";
+      const precoProduto = Number(produto.price || produto.preco || 0);
+    
+      // Verifica se o produto já foi adicionado para apenas somar a quantidade (+1)
+      const itemExistente = document.querySelector(`[data-produto-id="${produtoId}"]`);
+      if (itemExistente) {
+        alterarQuantidadeItem(produtoId, 1);
+        return;
+      }
+    
+      // Gera o HTML minimalista e compacto do carrinho que desenhamos nos passos anteriores
+      const novoItemHTML = `
+        <div class="item-revisado-bloco" data-produto-id="${produtoId}" data-preco-unitario="${precoProduto}" style="margin-bottom: 6px; border-bottom: 1px dashed #e5e7eb; padding-bottom: 4px;">
+
+          <!-- PRIMEIRA LINHA: Nome e botões reduzidos -->
+          <div class="linha-superior" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
+            <span class="nome-produto" style="font-weight: 500; color: #1f2937; font-size: 0.9rem; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; max-width: 130px;">${produtoNome}</span>
+          
+            <div class="controles-quantidade" style="display: flex; align-items: center; gap: 2px;">
+              <button type="button" onclick="alterarQuantidadeItem(${produtoId}, -1)" style="width: 20px; height: 20px; display: flex; align-items: center; border: none; background: none; cursor: pointer; font-weight: bold; font-size: 24px;">-</button>
+
+              <input type="text" class="input-qtd-item" value="1" onchange="validarQuantidadeManual(this, ${produtoId})" style="width: 26px; height: 20px; text-align: center; border: none; background: transparent; font-size: 0.85rem; font-weight: 600; color: #374151; padding: 0; outline: none;">
+
+              <button type="button" onclick="alterarQuantidadeItem(${produtoId}, 1)" style="width: 20px; height: 20px; display: flex; align-items: center; border: none; background: none; cursor: pointer; font-weight: bold; font-size: 24px; padding: 0;">+</button>
+            </div>
+          </div>
+        
+          <!-- SEGUNDA LINHA: Subtotal -->
+          <div class="linha-inferior mt-3" style="display: flex; justify-content: flex-end; align-items: center; line-height: 1;">
+            <span style="font-size: 0.85rem; color: #6b7280; margin-right: 4px;">Subtotal:</span>
+            <strong class="preco-subtotal-item" style="color: #7a7a7a; font-size: 14px; font-weight: 700;">R$ ${precoProduto.toFixed(2).replace('.', ',')}</strong>
+          </div>
+        
+        </div>
+      `;
+      
+      containerRevisao.insertAdjacentHTML('beforeend', novoItemHTML);
+      
+      if (typeof atualizarTotalRevisao === "function") {
+        atualizarTotalRevisao();
+      }
+    }
+    
+    // Função para aumentar ou diminuir a quantidade pelos botões + e -
+    function alterarQuantidadeItem(idProduto, mudanca) {
+      const blocoItem = document.querySelector(`[data-produto-id="${idProduto}"]`);
+      if (!blocoItem) return;
+    
+      const inputQtd = blocoItem.querySelector('.input-qtd-item');
+      let quantidadeAtual = parseInt(inputQtd.value) || 1;
+    
+      quantidadeAtual += mudanca;
+    
+      if (quantidadeAtual <= 0) {
+        // Se a quantidade chegar a zero, remove o item do carrinho
+        blocoItem.remove();
+        if (typeof verificarCarrinhoVazio === "function") {
+          verificarCarrinhoVazio();
+        }
+      } else {
+        inputQtd.value = quantidadeAtual;
+        if (typeof atualizarPrecoSubtotalItem === "function") {
+          atualizarPrecoSubtotalItem(blocoItem, quantidadeAtual);
+        }
+      }
+    
+      if (typeof atualizarTotalRevisao === "function") {
+        atualizarTotalRevisao();
+      }
+    }
+  
+    // Função executada se o usuário digitar a quantidade manualmente no input text
+    function validarQuantidadeManual(input, idProduto) {
+      const blocoItem = document.querySelector(`[data-produto-id="${idProduto}"]`);
+      if (!blocoItem) return;
+    
+      let quantidadeDigitada = parseInt(input.value);
+    
+      // Se digitar algo inválido ou menor/igual a zero, remove o item
+      if (isNaN(quantidadeDigitada) || quantidadeDigitada <= 0) {
+        blocoItem.remove();
+        verificarCarrinhoVazio();
+      } else {
+        input.value = quantidadeDigitada;
+        atualizarPrecoSubtotalItem(blocoItem, quantidadeDigitada);
+      }
+    
+      if (typeof atualizarTotalRevisao === "function") {
+        atualizarTotalRevisao();
+      }
+    }
+    
+    // Recalcula o valor da segunda linha baseado na quantidade
+    function atualizarPrecoSubtotalItem(blocoItem, quantidade) {
+      const precoUnitario = parseFloat(blocoItem.getAttribute('data-preco-unitario')) || 0;
+      const elementoSubtotal = blocoItem.querySelector('.preco-subtotal-item');
+    
+      if (elementoSubtotal) {
+        const novoSubtotal = precoUnitario * quantidade;
+        elementoSubtotal.innerText = `R$ ${novoSubtotal.toFixed(2)}`;
+      }
+    }
+    
+    // Verifica se o carrinho ficou totalmente limpo para devolver a mensagem padrão
+    function verificarCarrinhoVazio() {
+      const containerRevisao = document.getElementById("itens-revisar");
+      if (!containerRevisao) return;
+    
+      const itensRestantes = containerRevisao.querySelectorAll('.item-revisado-bloco');
+    
+      if (itensRestantes.length === 0) {
+        containerRevisao.innerHTML = `
+          <p id="msg-pedido-vazio" style="color: #888; font-style: italic; text-align: center; padding: 10px; margin: 0;">
+            Nenhum item adicionado
+          </p>
+        `;
+      }
+    }
+    
+    // Função que calcula a soma de todos os itens do carrinho e atualiza o total na tela
+    function atualizarTotalRevisao() {
+      const containerRevisao = document.getElementById("itens-revisar");
+      const totalPedidoValorElemento = document.getElementById("total-pedido-valor");
+    
+      if (!containerRevisao || !totalPedidoValorElemento) return;
+    
+      // 1. Busca todos os blocos de produtos que estão atualmente no carrinho
+      const itensNoCarrinho = containerRevisao.querySelectorAll('.item-revisado-bloco');
+      let somaTotalGeral = 0;
+    
+      // 2. Percorre item por item para calcular o acumulado
+      itensNoCarrinho.forEach(blocoItem => {
+        // Recupera o preço unitário guardado no atributo HTML data-preco-unitario
+        const precoUnitario = parseFloat(blocoItem.getAttribute('data-preco-unitario')) || 0;
+    
+        // Recupera a quantidade digitada ou alterada nos botões (+ / -)
+        const inputQtd = blocoItem.querySelector('.input-qtd-item');
+        const quantidade = inputQtd ? (parseInt(inputQtd.value) || 0) : 0;
+    
+        // Soma o subtotal deste item ao total geral do pedido
+        somaTotalGeral += (precoUnitario * quantidade);
+      });
+    
+      // 3. Atualiza o texto do elemento HTML formatando para a moeda Real (R$)
+      totalPedidoValorElemento.innerText = `R$ ${somaTotalGeral.toFixed(2).replace('.', ',')}`;
+    }
+    
+    // Listener para mapear os cliques nos botões de pagamento nativos do seu HTML
+    document.addEventListener("DOMContentLoaded", () => {
+      const botoesPagamento = document.querySelectorAll(".btn-pagamento");
+      botoesPagamento.forEach(botao => {
+        botao.addEventListener("click", () => {
+          const tipoPagamento = botao.getAttribute("data-pagamento");
+          const textoPagamento = botao.innerText;
+          
+          // Validação de segurança caso a função de adicionar pagamento ainda não tenha sido declarada
+          if (typeof adicionarFormaPagamento === "function") {
+            adicionarFormaPagamento(tipoPagamento, textoPagamento);
+          }
+        });
+      });
+    });
+  
+    // 1. Injeta uma nova linha de pagamento na listagem
+    function adicionarFormaPagamento(tipo, texto) {
+      const secao = document.getElementById("secao-pagamentos");
+      const lista = document.getElementById("lista-pagamentos");
+      if (!secao || !lista) return;
+    
+      // Exibe a seção de pagamentos caso esteja oculta
+      secao.style.display = "block";
+    
+      // Cria um ID único para podermos identificar e remover essa linha depois
+      const linhaId = `pg-${Date.now()}`;
+    
+      // Define se deve exibir os campos extras de Dinheiro/Troco
+      const campoTrocoHTML = tipo === 'dinheiro' ? `
+        <div class="detalhe-dinheiro" style="display: flex; gap: 10px; margin-top: 5px; font-size: 0.85rem; color: #555; align-items: center; padding-left: 34px;">
+          <span>Troco:</span>
+          <strong class="valor-troco" style="color: #2e7d32;">R$ 0,00</strong>
+        </div>
+      ` : '';
+    
+      const linhaHTML = `
+        <div id="${linhaId}" class="linha-pagamento-item" data-tipo="${tipo}" style="background: #fdfdfd; border: 1px solid #eee; padding: 8px; border-radius: 4px; display: flex; flex-direction: column; gap: 4px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+    
+            <!-- Botão de Lixeira -->
+            <button type="button" onclick="removerLinhaPagamento('${linhaId}')" style="background: none; border: none; color: #d32f2f; cursor: pointer; font-size: 1.1rem; padding: 0 4px;" title="Remover Pagamento">
+              🗑️
+            </button>
+    
+            <!-- Input para Inserir o Valor Pago -->
+            <input type="text" class="input-valor-pago" placeholder="R$ 0,00" oninput="atualizarFluxoFinanceiro()" style="width: 80px; height: 26px; padding: 2px 5px; border: 1px solid #ccc; border-radius: 4px; font-size: 0.9rem;">
+    
+            <!-- Nome da Forma de Pagamento -->
+            <span style="font-weight: 500; color: #333; flex-grow: 1; text-align: left; margin-left: 5px;">${texto}</span>
+          </div>
+          ${campoTrocoHTML}
+        </div>
+      `;
+    
+      lista.insertAdjacentHTML('beforeend', linhaHTML);
+      atualizarFluxoFinanceiro();
+    }
+    
+    // 2. Controla os cálculos matemáticos de Falta Pagar, Totais e Troco
+    function atualizarFluxoFinanceiro() {
+      // Primeiro, força a atualização do total bruto do pedido vindo do carrinho
+      if (typeof atualizarTotalRevisao === "function") {
+        atualizarTotalRevisao();
+      }
+    
+      const totalPedidoTexto = document.getElementById("total-pedido-valor")?.innerText || "R$ 0,00";
+      // Converte de forma robusta o texto "R$ 150,50" para o número 150.50
+      const totalPedido = parseFloat(totalPedidoTexto.replace("R$", "").replace(/\./g, "").replace(",", ".").trim()) || 0;
+    
+      const linesPagamento = document.querySelectorAll(".linha-pagamento-item");
+      let totalPagoAteAgora = 0;
+    
+      linesPagamento.forEach(linha => {
+        const inputValor = linha.querySelector(".input-valor-pago");
+        if (!inputValor) return;
+        
+        // Converte o valor digitado pelo usuário no input para float válido
+        let valorPago = parseFloat(inputValor.value.replace(/\./g, "").replace(",", ".")) || 0;
+        totalPagoAteAgora += valorPago;
+    
+        // Se for do tipo dinheiro, calcula o troco específico desta linha
+        if (linha.getAttribute("data-tipo") === "dinheiro") {
+          const elementoTroco = ChildElement(linha, ".valor-troco") || linha.querySelector(".valor-troco");
+          if (elementoTroco) {
+            // O troco só existe se o valor total pago no pedido ultrapassar o valor do pedido
+            let troco = 0;
+            if (totalPagoAteAgora > totalPedido) {
+              // O troco máximo é limitado ao excesso que o dinheiro trouxe
+              const excessoGeral = totalPagoAteAgora - totalPedido;
+              troco = Math.min(valorPago, excessoGeral);
+            }
+            elementoTroco.innerText = `R$ ${troco.toFixed(2).replace(".", ",")}`;
+          }
+        }
+      });
+    
+      // Calcula a diferença que falta pagar
+      const faltaPagar = totalPedido - totalPagoAteAgora;
+      const elementoFalta = document.getElementById("falta-pagar-valor");
+    
+      if (elementoFalta) {
+        if (faltaPagar > 0) {
+          elementoFalta.innerText = `R$ ${faltaPagar.toFixed(2).replace(".", ",")}`;
+          elementoFalta.style.color = "#d32f2f"; // Vermelho se ainda falta
+        } else {
+          elementoFalta.innerText = "R$ 0,00";
+          elementoFalta.style.color = "#2e7d32"; // Verde se já quitou ou tem troco
+        }
+      }
+    }
+    
+    // Função auxiliar interna para compatibilidade e segurança de escopo
+    function ChildElement(parent, selector) {
+      return parent.querySelector(selector);
+    }
+
+    // 3. Remove uma linha de pagamento específica através do botão de lixeira
+    function removerLinhaPagamento(id) {
+      const linha = document.getElementById(id);
+      if (linha) {
+        linha.remove();
+      }
+
+      // Oculta a seção inteira se não sobrar mais nenhuma forma de pagamento inserida
+      const restantes = document.querySelectorAll(".linha-pagamento-item");
+      if (restantes.length === 0) {
+        const secao = document.getElementById("secao-pagamentos");
+        if (secao) secao.style.display = "none";
+      }
+
+      atualizarFluxoFinanceiro();
+    }
+
+    // 4. Remove todas as linhas de pagamento de uma vez
+    function removepagamentos() {
+      const lista = document.getElementById("lista-pagamentos");
+      if (lista) {
+        lista.innerHTML = "";
+      }
+
+      const secao = document.getElementById("secao-pagamentos");
+      if (secao) secao.style.display = "none";
+
+      atualizarFluxoFinanceiro();
+
+      return false;
+    }
+
+    // Função mestre acionada pelo clique no botão "Salvar Pedido"
+    async function enviarPedidoFormulario() {
+      const selectDelivery = document.getElementById("select_delivery");
+      const obsInput = document.getElementById("AddObs");
+      const cpfInput = document.getElementById("AddCPF-CNPJ");
+      const descontoInput = document.getElementById("addPedido_descInput");
+      const totalTexto = document.getElementById("total-pedido-valor")?.innerText || "R$ 0,00";
+
+      // Captura o ID do campo oculto (se tiver preenchido, o Python sabe que deve ATUALIZAR)
+      const idEdicao = document.getElementById('input_pedido_id_edicao').value;
+
+      const totalPedidoNum = parseFloat(totalTexto.replace("R$", "").replace(/\./g, "").replace(",", ".").trim()) || 0;
+
+      const blocosProdutos = document.querySelectorAll('.item-revisado-bloco');
+      if (blocosProdutos.length === 0) {
+        alert("Atenção: Adicione pelo menos um produto ao pedido antes de salvar!");
+        return;
+      }
+    
+      const listaItensObjeto = [];
+      blocosProdutos.forEach(bloco => {
+        const idProduto = bloco.getAttribute('data-produto-id');
+        const inputQtd = bloco.querySelector('.input-qtd-item');
+        const qtd = inputQtd ? (parseInt(inputQtd.value) || 1) : 1;
+        const precoUnitario = parseFloat(bloco.getAttribute('data-preco-unitario')) || 0;
+      
+        listaItensObjeto.push({
+          product_id: parseInt(idProduto),
+          quantity: qtd,
+          unit_price: precoUnitario
+        });
+      });
+    
+      const botaoPagamentoAtivo = document.querySelector(".btn-pagamento.active");
+      const formaPagamento = botaoPagamentoAtivo ? botaoPagamentoAtivo.getAttribute("data-pagamento") : "dinheiro";
+    
+      const dadosPedido = {
+        pedido_id_edicao: idEdicao ? parseInt(idEdicao) : null, // Enviado no payload centralizado
+        delivery: selectDelivery ? selectDelivery.value : "balcao",
+        observation: obsInput ? obsInput.value.trim() : "",
+        documento_cliente: cpfInput ? cpfInput.value.trim() : "",
+        valor_ajuste: descontoInput ? (parseFloat(descontoInput.value.replace(",", ".")) || 0) : 0,
+        total_value: totalPedidoNum,
+        items: listaItensObjeto,
+        forma_pagamento: formaPagamento
+      };
+    
+      try {
+        const response = await fetch('/api/pedido/criar', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ""
+          },
+          body: JSON.stringify(dadosPedido)
+        });
+      
+        const resultado = await response.json();
+      
+        if (response.ok && resultado.success) {
+          alert(idEdicao ? "Pedido atualizado com sucesso!" : "Pedido salvo com sucesso!");
+          window.location.reload();
+        } else {
+          alert("Erro ao salvar pedido: " + (resultado.error || "Erro desconhecido."));
+        }
+      } catch (error) {
+        console.error("Erro na requisição:", error);
+        alert("Não foi possível conectar ao servidor Flask.");
+      }
+    }
+
+
+    // Funções de controle de abertura/fechamento do Modal exigidas pelo seu HTML
+    function abrirModalProdutos() {
+      const modal = document.getElementById('modal-pedido');
+      if (modal) {
+        modal.style.display = 'flex';
+        if (typeof preencherProdutos === "function") {
+          preencherProdutos();
+        }
+        if (typeof atualizarRevisaoPedido === "function") {
+          atualizarRevisaoPedido();
+        }
+      }
+    }
+
+    function fecharModalProdutos() {
+      const modal = document.getElementById("modal-pedido");
+      if (modal) {
+        modal.style.display = "none";
+      }
+    }
+
+    function filtrarItens(inputElement, idTabela) {
+      const termoBusca = inputElement.value.toLowerCase().trim();
+      
+      // Captura todas as linhas do corpo da tabela
+      const linhasHTML = Array.from(document.querySelectorAll(`#${idTabela} tbody tr`));
+      
+      // Se a tabela estiver vazia, interrompe a execução
+      if (linhasHTML.length === 0) return;
+      
+      // Se tiver menos de 4 caracteres, mostra todas as linhas e para a função aqui
+      if (termoBusca.length < 4) {
+        linhasHTML.forEach(linha => {
+          linha.style.display = "table-row"; // Garante que tudo fique visível
+        });
+        return; // Interrompe a função (não faz a pesquisa ainda)
+      }
+    
+      // Mapeia os dados focando no conteúdo útil (roda apenas com 4 ou mais caracteres)
+      const dadosTabela = linhasHTML.map(linha => {
+        const celulas = Array.from(linha.getElementsByTagName('td'));
+        
+        // Ignora a primeira coluna do checkbox
+        const celulasDeDados = celulas.slice(1);
+    
+        // Captura o texto do 'data-original' ou do textContent
+        const textoCompletoLinha = celulasDeDados.map(celula => {
+          const valorAtributo = celula.getAttribute('data-original');
+          return valorAtributo ? valorAtributo.toLowerCase() : celula.textContent.toLowerCase();
+        });
+    
+        return {
+          elementoHTML: linha, // Corrigido o erro de sintaxe 'line = linha' do código anterior
+          textos: textoCompletoLinha
+        };
+      });
+    
+      // Filtra aplicando a lógica do .filter()
+      const linhasCompativeis = dadosTabela.filter(item => 
+        item.textos.some(texto => texto.includes(termoBusca))
+      );
+    
+      // Oculta ou exibe as linhas com base no resultado do filtro
+      dadosTabela.forEach(item => {
+        if (linhasCompativeis.includes(item)) {
+          item.elementoHTML.style.display = "table-row"; 
+        } else {
+          item.elementoHTML.style.display = "none";
+        }
+      });
+    }
+
+    function marcarComoPago() {
+      const container = document.getElementById('container-status-pagamento');
+      const btnPagamento = document.getElementById('btn-registrar-pagamento');
+      if (!container) return;
+
+      // HTML da Tag de Pago corrigido de py-1.5 para py-2 (padrão Bootstrap 5)
+      const tagPagoHTML = `
+        <span class="badge bg-success d-inline-flex align-items-center gap-2 py-2 px-2 fs-7 animate__animated animate__fadeIn">
+          Pago
+          <button type="button" class="btn-close btn-close-white" style="font-size: 0.55rem; padding: 0;" onclick="removerPagamento()" aria-label="Cancelar pagamento"></button>
+        </span>
+      `;
+    
+      // Insere a tag no campo
+      container.innerHTML = tagPagoHTML;
+    
+      // Desabilita o botão superior para evitar cliques duplicados enquanto estiver pago
+      if (btnPagamento) {
+        btnPagamento.classList.add('disabled');
+      }
+    }
+
+    function removerPagamento() {
+      const container = document.getElementById('container-status-pagamento');
+      const btnPagamento = document.getElementById('btn-registrar-pagamento');
+
+      // Limpa o campo de pagamento voltando a ficar em branco
+      if (container) {
+        container.innerHTML = '';
+      }
+
+      // Reativa o botão superior de registro
+      if (btnPagamento) {
+        btnPagamento.classList.remove('disabled');
+      }
+    }
+
+    function imprimirPedido() {
+      const elementoId = document.getElementById('modal-id-pedido');
+      if (elementoId) {
+        const idPedido = elementoId.textContent;
+        console.log("Imprimindo pedido #" + idPedido);
+        // Dica Flask: Se no futuro quiser gerar um PDF de impressão real, 
+        // você pode redirecionar para: window.open('/pedido/imprimir/' + idPedido, '_blank');
+      }
+    
+    }
+
+    // Funções auxiliares apenas para ilustrar a mudança visual de cores nos círculos
+    function activarIconeVerde(id) {
+      const icon = document.querySelector(`#${id} .step-icon`);
+      if (icon) {
+        icon.classList.remove('bg-secondary', 'opacity-50', 'bg-warning', 'bg-primary', 'bg-purple', 'bg-danger');
+        icon.classList.add('bg-success');
+      }
+    }
+
+    function activarIconeAviso(id) {
+      const icon = document.querySelector(`#${id} .step-icon`);
+      if (icon) {
+        icon.classList.remove('bg-secondary', 'opacity-50', 'bg-success', 'bg-primary', 'bg-purple', 'bg-danger');
+        icon.classList.add('bg-warning');
+      }
+    }
+
+    // Configuração de ordem e cores customizadas do Bootstrap para cada nó
+    const sequenciaStatus = ['R', 'EP', 'PR', 'F', 'C'];
+    const mapaCores = {
+      'R':  { classe: 'bg-warning',  texto: 'text-warning' },  // Realizado: Amarelo
+      'EP': { classe: 'bg-primary',  texto: 'text-primary' },  // Em Preparo: Azul
+      'PR': { classe: 'bg-purple',   texto: 'text-purple' },   // Pronto p/ Retirada: Roxo
+      'F':  { classe: 'bg-success',  texto: 'text-success' },  // Finalizado: Verde
+      'C':  { classe: 'bg-danger', texto: 'text-danger' }    // Cancelado: Vermelho
+    };
+
+    // Adiciona um estilo dinâmico na página para suportar a cor Roxa (purple) do Bootstrap que pode não vir por padrão
+    if (!document.getElementById('estilo-roxo-timeline')) {
+      const style = document.createElement('style');
+      style.id = 'estilo-roxo-timeline';
+      style.innerHTML = '.bg-purple { background-color: #6f42c1 !important; } .text-purple { color: #6f42c1 !important; }';
+      document.head.appendChild(style);
+    }
+
+    // 2. RE-RENDERIZADOR DE CORES DA LINHA DO TEMPO
+    function atualizarTimelineVisual(statusAtual) {
+      const nodes = document.querySelectorAll('.step-node');
+      const barraProgresso = document.getElementById('barra-progresso-modal');
+    
+      if (!barraProgresso) return;
+    
+      // Reseta todas as colorações antigas acumuladas na barra
+      barraProgresso.classList.remove('bg-primary', 'bg-warning', 'bg-purple', 'bg-success', 'bg-danger');
+    
+      const indiceAtual = sequenciaStatus.indexOf(statusAtual);
+    
+      // CASO ESPECIAL: PEDIDO CANCELADO DEFINITIVO
+      //if (statusAtual === 'C') {
+      //  barraProgresso.style.width = '100%';
+      //  barraProgresso.classList.add('bg-danger');
+      //
+      //  nodes.forEach(node => {
+      //    const statusNode = node.getAttribute('data-status');
+      //    const iconContainer = node.querySelector('.step-icon');
+      //    const label = node.querySelector('.step-label');
+      //  
+      //    if (!iconContainer || !label) return;
+      //  
+      //    iconContainer.classList.remove('bg-secondary', 'bg-warning', 'bg-primary', 'bg-purple', 'bg-success');
+      //    label.classList.remove('text-muted', 'text-warning', 'text-primary', 'text-purple', 'text-success');
+      //  
+      //    if (statusNode === 'C') {
+      //      // Apenas a última bolinha acende em Vermelho Vivo
+      //      iconContainer.classList.add('bg-danger');
+      //      label.classList.add('text-danger', 'fw-bold');
+      //    } else {
+      //      // As etapas anteriores ficam foscas indicando que o processo morreu
+      //      node.classList.add('opacity-50');
+      //      iconContainer.classList.add('bg-secondary');
+      //      label.classList.add('text-muted');
+      //    }
+      //  });
+      //  return;
+      //}
+    
+      // FLUXO NORMAL DE CORRIDA (R, EP, PR, F)
+      nodes.forEach(node => node.classList.remove('opacity-50'));
+    
+      // Dividir a barra em frações por etapa normal alcançada
+      let porcentagem = 0;
+      if (statusAtual === 'R') {
+        porcentagem = 10;
+      } else if (statusAtual === 'EP') {
+        porcentagem = 30;
+      } else if (statusAtual === 'PR') {
+        porcentagem = 50;
+      } else if (statusAtual === 'F') {
+        porcentagem = 70;
+      } else if (statusAtual === 'C') {
+        porcentagem = 80; // Preenche toda a barra até chegar no nó verde
+      }
+
+      barraProgresso.style.width = `${porcentagem}%`;
+      const corConfigAtual = mapaCores[statusAtual]; //|| { classe: 'bg-primary' };
+      barraProgresso.classList.add(corConfigAtual.classe);
+    
+      // Varre e pinta cada bolinha individualmente com base no status do banco
+      nodes.forEach(node => {
+        const statusNode = node.getAttribute('data-status');
+        const indiceNode = sequenciaStatus.indexOf(statusNode);
+        const iconContainer = node.querySelector('.step-icon');
+        const label = node.querySelector('.step-label');
+      
+        if (!iconContainer || !label) return;
+      
+        iconContainer.classList.remove('bg-secondary', 'bg-warning', 'bg-primary', 'bg-purple', 'bg-success', 'bg-danger', 'opacity-50');
+        label.classList.remove('text-muted', 'text-warning', 'text-primary', 'text-purple', 'text-success', 'text-danger', 'fw-bold', 'fw-semibold');
+      
+        const corConfigNode = mapaCores[statusNode];
+      
+        if (indiceNode <= indiceAtual) {
+          // Nós passados e nó ativo ganham suas respectivas cores (Amarelo, Azul, Roxo, Verde)
+          if (corConfigNode) {
+            iconContainer.classList.add(corConfigNode.classe);
+            label.classList.add(corConfigNode.texto, 'fw-bold');
+          }
+        } else {
+          // Nós futuros (e o Cancelado se o pedido estiver ativo) permanecem cinzas foscos desativados
+          iconContainer.classList.add('bg-secondary', 'opacity-50');
+          label.classList.add('text-muted', 'fw-semibold');
+        }
+      });
+    }
+
+    // FUNÇÃO ACIONADA AO CLICAR NA LINHA DA TABELA
+    function carregarEDispararModal(idBanco, statusAtual) {
+      const idLimpo = String(idBanco).trim();
+      const statusLimpo = String(statusAtual).trim();
+
+      console.log("[DEBUG] Abrindo modal do registro ID:", idLimpo);
+
+      // 1. Vincula o ID real em todas as bolinhas para os cliques posteriores
+      document.querySelectorAll('.step-node').forEach(node => {
+        node.setAttribute('data-pedido-ativo', idLimpo);
+      });
+
+      // 2. Renderiza visualmente a linha do tempo com as cores certas
+      atualizarTimelineVisual(statusLimpo);
+
+      // 3. Alimenta o campo oculto e o título temporário
+      const inputIdReal = document.getElementById('modal-pedido-id-real');
+      if (inputIdReal) inputIdReal.value = idLimpo;
+
+      const modalIdElement = document.getElementById('modal-id-pedido');
+      if (modalIdElement) {
+        modalIdElement.textContent = `Carregando...`; 
+      }
+
+      // 4. Abre o modal do Bootstrap
+      const modalElement = document.getElementById('status-pedido');
+      if (modalElement) {
+        const modalBootstrap = bootstrap.Modal.getOrCreateInstance(modalElement);
+        modalBootstrap.show();
+      }
+
+      // 5. Opcional: Aqui você pode disparar um fetch(GET) para carregar os itens reais da tabela
+      // como estruturamos anteriormente na rota /api/pedido/id
+    }
+
+    // EVENTO DE CLIQUE NAS BOLINHAS DA TIMELINE (ATUALIZADO PARA FLASK)
+    document.querySelectorAll('.step-node').forEach(node => {
+      node.addEventListener('click', function() {
+        const pedidoId = this.getAttribute('data-pedido-ativo');
+
+        if (!pedidoId || isNaN(pedidoId) || parseInt(pedidoId) <= 0) {
+          console.warn('Aviso: ID de pedido inválido.');
+          return; 
+        }
+
+        const novoStatus = this.getAttribute('data-status');
+
+        // URL corrigida sem a barra "/" final para o padrão de rotas do Flask
+        fetch(`/api/pedidos/${pedidoId}/update`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            // Captura o Token CSRF do Flask injetado na tag meta
+            'X-CSRFToken': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ""
+          },
+          body: JSON.stringify({ status: novoStatus })
+        })
+        .then(response => {
+          if (!response.ok) throw new Error('Erro do servidor Flask.');
+          return response.json();
+        })
+        .then(data => {
+          if (data.success) {
+            // Atualiza a linha do tempo com a nova cor da etapa clicada
+            atualizarTimelineVisual(novoStatus);
+
+            // ATUALIZAÇÃO DO CABEÇALHO: Injeta o número order_id vindo da API Flask
+            const modalIdElement = document.getElementById('modal-id-pedido');
+            if (modalIdElement && data.order_id) {
+              modalIdElement.textContent = data.order_id;
+            }
+
+            // Atualiza dinamicamente o gatilho da tabela na tela sem dar F5
+            const linhaTabela = document.querySelector(`tr[onclick*="'${pedidoId}'"]`);
+            if (linhaTabela) {
+              linhaTabela.setAttribute('onclick', `carregarEDispararModal('${pedidoId}', '${novoStatus}')`);
+            
+              // Opcional: Atualiza também visualmente a badge de status na tabela de fundo
+              const badgeStatus = linhaTabela.querySelector('[data-field="status"] span');
+              if (badgeStatus) {
+                badgeStatus.textContent = novoStatus;
+                badgeStatus.className = `badge ${novoStatus === 'F' ? 'bg-success' : novoStatus === 'C' ? 'bg-danger' : 'bg-warning text-white'} px-2 py-1 small`;
+              }
+            }
+          } else {
+            alert('Erro: ' + data.error);
+          }
+        })
+        .catch(error => console.error('Erro na requisição do Flask:', error));
+      });
+    });
+
+    function carregarEDispararModal(orderId, statusAtual) {
+      const idLimpo = String(orderId).trim();
+      const statusLimpo = String(statusAtual).trim();
+
+      console.log("[DEBUG] Abrindo pedido:", idLimpo, "com status:", statusLimpo);
+
+      // 1. Injeta o número no texto do cabeçalho
+      const modalIdElement = document.getElementById('modal-id-pedido');
+      if (modalIdElement) {
+        modalIdElement.textContent = idLimpo;
+      }
+
+      // Grava também o ID no input oculto de controle do modal para consistência
+      const inputIdReal = document.getElementById('modal-pedido-id-real');
+      if (inputIdReal) {
+        inputIdReal.value = idLimpo;
+      }
+
+      // 2. VINCULAÇÃO DIRETA: Grava o ID em cada nó da linha do tempo
+      document.querySelectorAll('.step-node').forEach(node => {
+        node.setAttribute('data-pedido-ativo', idLimpo);
+      });
+
+      // 3. Pinta a linha do tempo visualmente
+      if (typeof atualizarTimelineVisual === 'function') {
+        atualizarTimelineVisual(statusLimpo);
+      }
+
+      // 4. Abre o modal do Bootstrap
+      const modalElement = document.getElementById('status-pedido');
+      if (modalElement) {
+        const modalBootstrap = bootstrap.Modal.getOrCreateInstance(modalElement);
+        modalBootstrap.show();
+      }
+    }
+
+    // ATUALIZADOR E ESCUTADOR DE CLIQUE DOS STATUS DA TIMELINE (AJUSTADO PARA FLASK)
+    document.querySelectorAll('.step-node').forEach(node => {
+      node.addEventListener('click', function() {
+        const pedidoId = this.getAttribute('data-pedido-ativo');
+        const novoStatus = this.getAttribute('data-status');
+      
+        if (!pedidoId || isNaN(pedidoId) || parseInt(pedidoId) <= 0) {
+          console.warn('Aviso: ID de pedido inválido para atualização de status.');
+          return; 
+        }
+      
+        // Faz a requisição assíncrona POST para a API do Flask
+        fetch(`/api/pedidos/${pedidoId}/update`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ""
+          },
+          body: JSON.stringify({ status: novoStatus })
+        })
+        .then(response => {
+          if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+          return response.json();
+        })
+        .then(data => {
+          if (data.success) {
+            // 1. Redesenha a barra e as cores das bolinhas instantaneamente no modal aberto
+            atualizarTimelineVisual(novoStatus);
+          
+            // 2. Localiza a linha correspondente na tabela principal de fundo
+            const linhaTabela = document.querySelector(`tr[onclick*="carregarEDispararModal('${pedidoId}'"]`) || 
+                                document.querySelector(`tr[onclick*="carregarEDispararModal(${pedidoId}"]`);
+
+            if (linhaTabela) {
+              // CORREÇÃO CRÍTICA DO TRAVAMENTO: Ajustado o nome correto da função para 'carregarEDispararModal'
+              linhaTabela.setAttribute('onclick', `carregarEDispararModal('${pedidoId}', '${novoStatus}')`);
+
+              // CORREÇÃO CRÍTICA DO "PR": Mapeia a sigla para o nome amigável completo que vai para a tabela
+              const badgeStatus = linhaTabela.querySelector('[data-field="status"] span');
+              if (badgeStatus) {
+                const dicionarioNomes = { 
+                  'R': 'Realizado', 
+                  'EP': 'Em Preparação', 
+                  'PR': 'Pronto p/ Retirada', 
+                  'F': 'Finalizado', 
+                  'C': 'Cancelado' 
+                };
+
+                // Injeta o texto completo traduzido na tabela
+                badgeStatus.textContent = dicionarioNomes[novoStatus] || novoStatus;
+
+                // Atualiza dinamicamente as classes de cores do Bootstrap na tabela de fundo
+                badgeStatus.className = `badge ${novoStatus === 'F' ? 'bg-success' : novoStatus === 'C' ? 'bg-danger' : 'bg-warning text-white'} px-2 py-1 small`;
+              }
+            }
+          } else {
+            alert('Erro ao modificar status: ' + (data.error || 'Erro desconhecido.'));
+          }
+        })
+        .catch(error => {
+          console.error('Erro na requisição do Flask:', error);
+          alert('Não foi possível sincronizar o status com o servidor.');
+        });
+      });
+    });
+    
+    // FUNÇÃO DO BOTÃO EDITAR PEDIDO: Abre a vitrine em modo de edição
+    async function abrirEdicaoPedido() {
+      const idPedido = document.getElementById('modal-pedido-id-real').value;
+      const orderIdSequencial = document.getElementById('modal-id-pedido').textContent;
+
+      if (!idPedido) return;
+
+      // 1. Fecha o Modal 2 (Acompanhamento) de forma limpa
+      const modalStatusElement = document.getElementById('status-pedido');
+      if (modalStatusElement) {
+        const instanceStatus = bootstrap.Modal.getInstance(modalStatusElement);
+        if (instanceStatus) instanceStatus.hide();
+      }
+    
+      // 2. Altera dinamicamente o título do modal principal de vendas
+      const spanTitulo = document.getElementById('texto-titulo-modal-pedido');
+      if (spanTitulo) {
+        spanTitulo.textContent = `Editar Pedido #${orderIdSequencial}`;
+      }
+    
+      // 3. Grava o ID físico no campo oculto para o backend e funções saberem que é uma EDIÇÃO
+      document.getElementById('input_pedido_id_edicao').value = idPedido;
+    
+      // 4. Limpa o carrinho atual da tela para não misturar itens de cliques passados
+      const containerRevisao = document.getElementById("itens-revisar");
+      if (containerRevisao) containerRevisao.innerHTML = "";
+    
+      // 5. CORREÇÃO CRÍTICA: Força a API a puxar os sucos/categorias antes de injetar as linhas na tela
+      if (listaProdutosGeral.length === 0 || listaCategoriasGeral.length === 0) {
+        await DataUpdate();
+      } else {
+        // Se já estiver na memória, apenas força o redesenho inicial da vitrine
+        renderizarCategorias();
+        preencherProdutos();
+      }
+    
+      // 6. Abre o Modal 1 (Vitrine de Vendas)
+      const modalPedidoElement = document.getElementById('modal-pedido');
+      if (modalPedidoElement) {
+        const instancePedido = bootstrap.Modal.getOrCreateInstance(modalPedidoElement);
+        instancePedido.show();
+      }
+    
+      // 7. Faz a busca assíncrona dos itens que já pertencem a este pedido específico no banco
+      try {
+        const response = await fetch(`/api/pedido/${idPedido}`);
+        if (!response.ok) throw new Error("Erro ao buscar dados do pedido.");
+
+        const dados = await response.json();
+      
+        // 8. Preenche os campos textuais e seletores da barra lateral
+        if (document.getElementById('AddObs')) document.getElementById('AddObs').value = dados.observation || "";
+        if (document.getElementById('AddCPF-CNPJ')) document.getElementById('AddCPF-CNPJ').value = dados.customer_document || "";
+        if (document.getElementById('select_delivery')) document.getElementById('select_delivery').value = dados.delivery || "balcao";
+        if (document.getElementById('addPedido_descInput')) document.getElementById('addPedido_descInput').value = dados.discount || "";
+      
+        // 9. Injeta os produtos comprados simulando os cliques na vitrine
+        if (dados.itens && dados.itens.length > 0) {
+          dados.itens.forEach(item => {
+            // Encontra o produto na memória global para passar o objeto completo preenchido
+            const prodCompleto = listaProdutosGeral.find(p => p.id == item.product_id);
+
+            adicionarProdutoAoPedido(prodCompleto || {
+              id: item.product_id,
+              name: item.product_name,
+              price: item.unit_price
+            });
+          
+            // Configura a quantidade correta que foi vendida
+            const blocoItem = document.querySelector(`[data-produto-id="${item.product_id}"]`);
+            if (blocoItem) {
+              const inputQtd = blocoItem.querySelector('.input-qtd-item');
+              if (inputQtd) {
+                inputQtd.value = item.quantity;
+                atualizarPrecoSubtotalItem(blocoItem, item.quantity);
+              }
+            }
+          });
+        }
+      
+        // Recalcula o somatório geral do carrinho
+        atualizarTotalRevisao();
+      
+      } catch (error) {
+        console.error("Erro ao carregar dados do histórico para edição:", error);
+        alert("Não foi possível carregar os itens salvos deste pedido.");
+      }
+    }
+
+  </script>
 {% endblock %}

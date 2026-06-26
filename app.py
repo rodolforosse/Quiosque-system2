@@ -10,6 +10,7 @@ from Usuarios import usuarios_bp
 from Dashboard import dashboard_bp
 from Caixa import caixa_bp
 from Pedidos import pedidos_bp
+from crm import crm_bp
 from api import api_bp
 from Usuarios.models import User, Role
 
@@ -44,12 +45,14 @@ def create_app():
     user_datastore = SQLAlchemyUserDatastore(db, User, Role)
     security.init_app(app, user_datastore)
    
+    # Registra todos os blueprints
     app.register_blueprint(api_bp)
     app.register_blueprint(caixa_bp)
     app.register_blueprint(dashboard_bp)
     app.register_blueprint(pedidos_bp)
     app.register_blueprint(produtos_bp)
     app.register_blueprint(usuarios_bp)
+    app.register_blueprint(crm_bp)
 
     with app.app_context():
         db.create_all()

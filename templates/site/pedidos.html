@@ -87,7 +87,7 @@
                         
                           {% if pedidos %}
                             {% for pedido in pedidos %}
-                              <tr onclick="carregarEDispararModal('{{ pedido.id }}', '{{ pedido.status }}')" data-visual-id="{{ pedido.order_id }}" style="cursor: pointer;">
+                            <tr onclick="abrirModalFluxoPedido('{{ pedido.id }}', '{{ pedido.order_id }}')" data-visual-id="{{ pedido.order_id }}" style="cursor: pointer;">
                                 <td class="ps-3" onclick="event.stopPropagation();">
                                   <div class="form-check">
                                     <input type="checkbox" class="form-check-input" data-group="pedidos" data-id="{{ pedido.id }}" style="transform: scale(1.2);">
@@ -281,16 +281,13 @@
         dadosCategoria.itens.forEach((produto) => {
           const precoFormatado = Number(produto.price || produto.preco || 0).toFixed(2).replace('.', ',');
 
-          // Simulação do código do produto (Ex: F30, F31) baseado no ID ou em campo personalizado
-          const codigoBadge = produto.codigo || `F${produto.id}`;
-
           // Simulação de imagem de miniatura (caso tenha no banco, use produto.imagem_url)
           const imagemMiniatura = "/static/images/suco_placeholder.png";
         
           // HTML estruturado em linha horizontal idêntico à foto
           html += `
             <div class="card-produto-linha d-flex align-items-center justify-content-between py-2 border-bottom text-decoration-none" 
-                 onclick="adicionarProdutoAoPedidoById('${produto.id}')"
+                 onclick="adicionarProdutoAoPedidoById('${produto.order_id}')"
                  style="cursor: pointer; transition: background 0.2s; min-height: 48px;">
 
               <!-- Lado Esquerdo: Imagem, Código e Nome com Link Sublinhado -->
@@ -852,16 +849,128 @@
       }
     }
 
-    function imprimirPedido() {
-      const elementoId = document.getElementById('modal-id-pedido');
-      if (elementoId) {
-        const idPedido = elementoId.textContent;
-        console.log("Imprimindo pedido #" + idPedido);
-        // Dica Flask: Se no futuro quiser gerar um PDF de impressão real, 
-        // você pode redirecionar para: window.open('/pedido/imprimir/' + idPedido, '_blank');
-      }
-    
-    }
+    async function imprimirPedido() {
+  // Captura o ID real do pedido aberto no modal de acompanhamento
+  const idPedido = document.getElementById('modal-pedido-id-real').value;
+  const orderIdSequencial = document.getElementById('modal-id-pedido').textContent;
+
+  if (!idPedido) {
+    alert("Erro: Não foi possível localizar o identificador do pedido para impressão.");
+    return;
+  }
+
+  try {
+    // 1. Busca os dados reais e atualizados do pedido direto na API do Flask
+    const response = await fetch(`/api/pedido/${idPedido}`);
+    if (!response.ok) throw new Error("Falha ao comunicar com o servidor Flask.");
+    const dados = await response.json();
+
+    // 2. Formatações de data e hora locais do navegador
+    const dataAtual = new Date();
+    const dataFormatada = dataAtual.toLocaleDateString('pt-BR');
+    const horaFormatada = dataAtual.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+
+    // Dicionário local para traduzir o canal de entrega na nota
+    const mapaDelivery = { 'balcao': 'Balcão', 'telefone': 'Telefone', 'whatsapp': 'WhatsApp', 'ifood': 'iFood', 'totem': 'Totem' };
+    const canalVenda = mapaDelivery[dados.delivery] || dados.delivery || 'Balcão';
+
+    // 3. Monta a estrutura de texto puro e tabelas que simula o cupom de 80mm
+    let cupomHTML = `
+      <div class="cupom-termico-container">
+        <div class="cupom-header">
+          <h2>CORE FLASK PDV</h2>
+          <p>Rua do Comércio, 123 - Centro</p>
+          <p>Telefone: (11) 99999-9999</p>
+          <div class="cupom-divisor">----------------------------------------</div>
+          <h3>CUPOM NÃO FISCAL</h3>
+          <p class="txt-negrito">PEDIDO #${orderIdSequencial}</p>
+          <p>Data: ${dataFormatada} - Hora: ${horaFormatada}</p>
+          <p>Canal: ${canalVenda.toUpperCase()}</p>
+        </div>
+        
+        <div class="cupom-divisor">----------------------------------------</div>
+        
+        <div class="cupom-cliente">
+          <p><span class="txt-negrito">Cliente:</span> ${dados.customer_name || 'Consumidor Balcão'}</p>
+          ${dados.customer_document ? `<p><span class="txt-negrito">CPF/CNPJ:</span> ${dados.customer_document}</p>` : ''}
+        </div>
+        
+        <div class="cupom-divisor">----------------------------------------</div>
+        
+        <table class="cupom-tabela-itens">
+          <thead>
+            <tr>
+              <th align="left">ITEM</th>
+              <th align="center">QTD</th>
+              <th align="right">V.UNIT</th>
+              <th align="right">TOTAL</th>
+            </tr>
+          </thead>
+          <tbody>
+    `;
+
+    // Varre as linhas do carrinho retornadas pela API e monta as fileiras do cupom
+    dados.itens.forEach(item => {
+      const totalItem = item.quantity * item.unit_price;
+      cupomHTML += `
+        <tr>
+          <td align="left" class="txt-truncate-item">${item.product_name}</td>
+          <td align="center">${item.quantity}</td>
+          <td align="right">${item.unit_price.toFixed(2).replace('.', ',')}</td>
+          <td align="right">${totalItem.toFixed(2).replace('.', ',')}</td>
+        </tr>
+      `;
+    });
+
+    // 4. Fecha a estrutura injetando os somatórios de descontos e o total geral faturado
+    cupomHTML += `
+          </tbody>
+        </table>
+        
+        <div class="cupom-divisor">----------------------------------------</div>
+        
+        <div class="cupom-totais">
+          ${dados.discount > 0 ? `<p>Desconto: <span>R$ ${dados.discount.toFixed(2).replace('.', ',')}</span></p>` : ''}
+          <p class="txt-total-grande">TOTAL: <span>R$ ${dados.total_value.toFixed(2).replace('.', ',')}</span></p>
+          <p>Forma Pagto: <span class="txt-negrito">${String(dados.forma_pagamento || 'Dinheiro').toUpperCase()}</span></p>
+        </div>
+        
+        ${dados.observation ? `
+          <div class="cupom-divisor">----------------------------------------</div>
+          <div class="cupom-obs">
+            <p class="txt-negrito">OBSERVAÇÕES:</p>
+            <p>${dados.observation}</p>
+          </div>
+        ` : ''}
+        
+        <div class="cupom-divisor">----------------------------------------</div>
+        <div class="cupom-footer">
+          <p>Obrigado pela preferência!</p>
+          <p>Volte Sempre</p>
+        </div>
+      </div>
+    `;
+
+    // 5. CRIAÇÃO DA JANELA DE IMPRESSÃO ISOLADA (O Segredo do layout limpo)
+    // Cria uma divisória temporária oculta na página de fundo, injeta o cupom e chama o print
+    const divImpressaoTemporaria = document.createElement('div');
+    divImpressaoTemporaria.id = 'area-impressao-termica-puro';
+    divImpressaoTemporaria.innerHTML = cupomHTML;
+    document.body.appendChild(divImpressaoTemporaria);
+
+    // Dispara a caixa de diálogo nativa de impressão do navegador Chrome/Firefox
+    window.print();
+
+    // Remove a divisória temporária do DOM após a impressão fechar para manter o HTML limpo
+    setTimeout(() => {
+      divImpressaoTemporaria.remove();
+    }, 500);
+
+  } catch (error) {
+    console.error("!! [Erro Impressão] Falha na montagem assíncrona do cupom térmico:", error);
+    alert("Não foi possível gerar o cupom não fiscal. Verifique a conexão com o servidor.");
+  }
+}
 
     // Funções auxiliares apenas para ilustrar a mudança visual de cores nos círculos
     function activarIconeVerde(id) {
@@ -880,16 +989,6 @@
       }
     }
 
-    // Configuração de ordem e cores customizadas do Bootstrap para cada nó
-    const sequenciaStatus = ['R', 'EP', 'PR', 'F', 'C'];
-    const mapaCores = {
-      'R':  { classe: 'bg-warning',  texto: 'text-warning' },  // Realizado: Amarelo
-      'EP': { classe: 'bg-primary',  texto: 'text-primary' },  // Em Preparo: Azul
-      'PR': { classe: 'bg-purple',   texto: 'text-purple' },   // Pronto p/ Retirada: Roxo
-      'F':  { classe: 'bg-success',  texto: 'text-success' },  // Finalizado: Verde
-      'C':  { classe: 'bg-danger', texto: 'text-danger' }    // Cancelado: Vermelho
-    };
-
     // Adiciona um estilo dinâmico na página para suportar a cor Roxa (purple) do Bootstrap que pode não vir por padrão
     if (!document.getElementById('estilo-roxo-timeline')) {
       const style = document.createElement('style');
@@ -900,234 +999,126 @@
 
     // 2. RE-RENDERIZADOR DE CORES DA LINHA DO TEMPO
     function atualizarTimelineVisual(statusAtual) {
-      const nodes = document.querySelectorAll('.step-node');
-      const barraProgresso = document.getElementById('barra-progresso-modal');
-    
-      if (!barraProgresso) return;
-    
-      // Reseta todas as colorações antigas acumuladas na barra
-      barraProgresso.classList.remove('bg-primary', 'bg-warning', 'bg-purple', 'bg-success', 'bg-danger');
-    
-      const indiceAtual = sequenciaStatus.indexOf(statusAtual);
-    
-      // CASO ESPECIAL: PEDIDO CANCELADO DEFINITIVO
-      //if (statusAtual === 'C') {
-      //  barraProgresso.style.width = '100%';
-      //  barraProgresso.classList.add('bg-danger');
-      //
-      //  nodes.forEach(node => {
-      //    const statusNode = node.getAttribute('data-status');
-      //    const iconContainer = node.querySelector('.step-icon');
-      //    const label = node.querySelector('.step-label');
-      //  
-      //    if (!iconContainer || !label) return;
-      //  
-      //    iconContainer.classList.remove('bg-secondary', 'bg-warning', 'bg-primary', 'bg-purple', 'bg-success');
-      //    label.classList.remove('text-muted', 'text-warning', 'text-primary', 'text-purple', 'text-success');
-      //  
-      //    if (statusNode === 'C') {
-      //      // Apenas a última bolinha acende em Vermelho Vivo
-      //      iconContainer.classList.add('bg-danger');
-      //      label.classList.add('text-danger', 'fw-bold');
-      //    } else {
-      //      // As etapas anteriores ficam foscas indicando que o processo morreu
-      //      node.classList.add('opacity-50');
-      //      iconContainer.classList.add('bg-secondary');
-      //      label.classList.add('text-muted');
-      //    }
-      //  });
-      //  return;
-      //}
-    
-      // FLUXO NORMAL DE CORRIDA (R, EP, PR, F)
-      nodes.forEach(node => node.classList.remove('opacity-50'));
-    
-      // Dividir a barra em frações por etapa normal alcançada
-      let porcentagem = 0;
-      if (statusAtual === 'R') {
-        porcentagem = 10;
-      } else if (statusAtual === 'EP') {
-        porcentagem = 30;
-      } else if (statusAtual === 'PR') {
-        porcentagem = 50;
-      } else if (statusAtual === 'F') {
-        porcentagem = 70;
-      } else if (statusAtual === 'C') {
-        porcentagem = 80; // Preenche toda a barra até chegar no nó verde
+      console.group("------------- [TELEMETRIA] PINTURA DA TIMELINE -------------");
+      console.log("-> [Entrada] Caractere enviado para o renderizador:", statusAtual);
+        
+      // Garante que a folha de estilo exista no documento
+      if (!document.getElementById('estilo-roxo-timeline-definitivo')) {
+        const style = document.createElement('style');
+        style.id = 'estilo-roxo-timeline-definitivo';
+        style.innerHTML = '.bg-purple { background-color: #6f42c1 !important; } .text-purple { color: #6f42c1 !important; }';
+        document.head.appendChild(style);
       }
-
+    
+      const sequenciaStatusLocal = ['R', 'EP', 'PR', 'F', 'C'];
+      const mapaCoresLocal = {
+        'R':  { classe: 'bg-warning',  texto: 'text-warning' },
+        'EP': { classe: 'bg-primary',  texto: 'text-primary' },
+        'PR': { classe: 'bg-purple',   texto: 'text-purple' },
+        'F':  { classe: 'bg-success',  texto: 'text-success' },
+        'C':  { classe: 'bg-danger',   texto: 'text-danger' }
+      };
+    
+      // Normalização agressiva de strings para o padrão de chaves
+      let statusLimpo = String(statusAtual).trim().toUpperCase();
+      if (statusLimpo === 'EM PREPARAÇÃO' || statusLimpo === 'EM PREPARO') {
+        statusLimpo = 'EP';
+      } else if (statusLimpo === 'REALIZADO') {
+        statusLimpo = 'R';
+      } else if (statusLimpo === 'PRONTO P/ RETIRADA' || statusLimpo === 'PRONTO PARA RETIRADA') {
+        statusLimpo = 'PR';
+      } else if (statusLimpo === 'FINALIZADO') {
+        statusLimpo = 'F';
+      } else if (statusLimpo === 'CANCELADO') {
+        statusLimpo = 'C';
+      }
+    
+      // CORREÇÃO CRÍTICA DO CONTÊINER:
+      // Em vez de document.querySelectorAll, limitamos a busca apenas aos nós que estão DENTRO do modal #status-pedido
+      const modalAcompanhamento = document.getElementById('status-pedido');
+      if (!modalAcompanhamento) {
+        console.error("!! [ERRO] Modal #status-pedido não foi encontrado no DOM.");
+        console.groupEnd();
+        return;
+      }
+      
+      const nodes = modalAcompanhamento.querySelectorAll('.step-node');
+      const barraProgresso = modalAcompanhamento.querySelector('#barra-progresso-modal');
+    
+      if (!barraProgresso) {
+        console.error("!! [ERRO CRÍTICO] O elemento '#barra-progresso-modal' está ausente no modal.");
+        console.groupEnd();
+        return;
+      }
+    
+      barraProgresso.classList.remove('bg-primary', 'bg-secondary', 'bg-warning', 'bg-purple', 'bg-success', 'bg-danger');
+    
+      const indiceAtual = sequenciaStatusLocal.indexOf(statusLimpo);
+      
+      // Ajuste do percentual baseado nas frações de 5 nós (0% a 100%)
+      let porcentagem = 0;
+      if (statusLimpo === 'R') {
+        porcentagem = 10;
+      } else if (statusLimpo === 'EP') {
+        porcentagem = 30;
+      } else if (statusLimpo === 'PR') {
+        porcentagem = 50;
+      } else if (statusLimpo === 'F') {
+        porcentagem = 70;
+      } else if (statusLimpo === 'C') {
+        porcentagem = 80;
+      }
+    
       barraProgresso.style.width = `${porcentagem}%`;
-      const corConfigAtual = mapaCores[statusAtual]; //|| { classe: 'bg-primary' };
+      const corConfigAtual = mapaCoresLocal[statusLimpo] || { classe: 'bg-secondary', texto: 'text-muted' };
       barraProgresso.classList.add(corConfigAtual.classe);
     
-      // Varre e pinta cada bolinha individualmente com base no status do banco
-      nodes.forEach(node => {
+      const relatorioAuditoria = [];
+    
+      nodes.forEach((node, idx) => {
         const statusNode = node.getAttribute('data-status');
-        const indiceNode = sequenciaStatus.indexOf(statusNode);
+        const indiceNode = sequenciaStatusLocal.indexOf(statusNode);
         const iconContainer = node.querySelector('.step-icon');
         const label = node.querySelector('.step-label');
       
-        if (!iconContainer || !label) return;
+        if (!iconContainer || !label) {
+          relatorioAuditoria.push({ "Nó": idx, "Status Nó": statusNode, "Resultado": "Erro interno" });
+          return;
+        }
       
         iconContainer.classList.remove('bg-secondary', 'bg-warning', 'bg-primary', 'bg-purple', 'bg-success', 'bg-danger', 'opacity-50');
         label.classList.remove('text-muted', 'text-warning', 'text-primary', 'text-purple', 'text-success', 'text-danger', 'fw-bold', 'fw-semibold');
       
-        const corConfigNode = mapaCores[statusNode];
+        const corConfigNode = mapaCoresLocal[statusNode] || { classe: 'bg-secondary', texto: 'text-muted' };
       
-        if (indiceNode <= indiceAtual) {
-          // Nós passados e nó ativo ganham suas respectivas cores (Amarelo, Azul, Roxo, Verde)
-          if (corConfigNode) {
-            iconContainer.classList.add(corConfigNode.classe);
-            label.classList.add(corConfigNode.texto, 'fw-bold');
-          }
+        if (indiceNode <= indiceAtual && indiceAtual !== -1) {
+          iconContainer.classList.add(corConfigNode.classe);
+          label.classList.add(corConfigNode.texto, 'fw-bold');
+          relatorioAuditoria.push({ "Nó": idx, "Status Nó": statusNode, "Ação": "PINTADO", "Classe": corConfigNode.classe });
         } else {
-          // Nós futuros (e o Cancelado se o pedido estiver ativo) permanecem cinzas foscos desativados
           iconContainer.classList.add('bg-secondary', 'opacity-50');
           label.classList.add('text-muted', 'fw-semibold');
+          relatorioAuditoria.push({ "Nó": idx, "Status Nó": statusNode, "Ação": "CINZA", "Classe": "bg-secondary" });
         }
       });
-    }
-
-    // FUNÇÃO ACIONADA AO CLICAR NA LINHA DA TABELA
-    function carregarEDispararModal(idBanco, statusAtual) {
-      const idLimpo = String(idBanco).trim();
-      const statusLimpo = String(statusAtual).trim();
-
-      console.log("[DEBUG] Abrindo modal do registro ID:", idLimpo);
-
-      // 1. Vincula o ID real em todas as bolinhas para os cliques posteriores
-      document.querySelectorAll('.step-node').forEach(node => {
-        node.setAttribute('data-pedido-ativo', idLimpo);
-      });
-
-      // 2. Renderiza visualmente a linha do tempo com as cores certas
-      atualizarTimelineVisual(statusLimpo);
-
-      // 3. Alimenta o campo oculto e o título temporário
-      const inputIdReal = document.getElementById('modal-pedido-id-real');
-      if (inputIdReal) inputIdReal.value = idLimpo;
-
-      const modalIdElement = document.getElementById('modal-id-pedido');
-      if (modalIdElement) {
-        modalIdElement.textContent = `Carregando...`; 
-      }
-
-      // 4. Abre o modal do Bootstrap
-      const modalElement = document.getElementById('status-pedido');
-      if (modalElement) {
-        const modalBootstrap = bootstrap.Modal.getOrCreateInstance(modalElement);
-        modalBootstrap.show();
-      }
-
-      // 5. Opcional: Aqui você pode disparar um fetch(GET) para carregar os itens reais da tabela
-      // como estruturamos anteriormente na rota /api/pedido/id
-    }
-
-    // EVENTO DE CLIQUE NAS BOLINHAS DA TIMELINE (ATUALIZADO PARA FLASK)
-    document.querySelectorAll('.step-node').forEach(node => {
-      node.addEventListener('click', function() {
-        const pedidoId = this.getAttribute('data-pedido-ativo');
-
-        if (!pedidoId || isNaN(pedidoId) || parseInt(pedidoId) <= 0) {
-          console.warn('Aviso: ID de pedido inválido.');
-          return; 
-        }
-
-        const novoStatus = this.getAttribute('data-status');
-
-        // URL corrigida sem a barra "/" final para o padrão de rotas do Flask
-        fetch(`/api/pedidos/${pedidoId}/update`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            // Captura o Token CSRF do Flask injetado na tag meta
-            'X-CSRFToken': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ""
-          },
-          body: JSON.stringify({ status: novoStatus })
-        })
-        .then(response => {
-          if (!response.ok) throw new Error('Erro do servidor Flask.');
-          return response.json();
-        })
-        .then(data => {
-          if (data.success) {
-            // Atualiza a linha do tempo com a nova cor da etapa clicada
-            atualizarTimelineVisual(novoStatus);
-
-            // ATUALIZAÇÃO DO CABEÇALHO: Injeta o número order_id vindo da API Flask
-            const modalIdElement = document.getElementById('modal-id-pedido');
-            if (modalIdElement && data.order_id) {
-              modalIdElement.textContent = data.order_id;
-            }
-
-            // Atualiza dinamicamente o gatilho da tabela na tela sem dar F5
-            const linhaTabela = document.querySelector(`tr[onclick*="'${pedidoId}'"]`);
-            if (linhaTabela) {
-              linhaTabela.setAttribute('onclick', `carregarEDispararModal('${pedidoId}', '${novoStatus}')`);
-            
-              // Opcional: Atualiza também visualmente a badge de status na tabela de fundo
-              const badgeStatus = linhaTabela.querySelector('[data-field="status"] span');
-              if (badgeStatus) {
-                badgeStatus.textContent = novoStatus;
-                badgeStatus.className = `badge ${novoStatus === 'F' ? 'bg-success' : novoStatus === 'C' ? 'bg-danger' : 'bg-warning text-white'} px-2 py-1 small`;
-              }
-            }
-          } else {
-            alert('Erro: ' + data.error);
-          }
-        })
-        .catch(error => console.error('Erro na requisição do Flask:', error));
-      });
-    });
-
-    function carregarEDispararModal(orderId, statusAtual) {
-      const idLimpo = String(orderId).trim();
-      const statusLimpo = String(statusAtual).trim();
-
-      console.log("[DEBUG] Abrindo pedido:", idLimpo, "com status:", statusLimpo);
-
-      // 1. Injeta o número no texto do cabeçalho
-      const modalIdElement = document.getElementById('modal-id-pedido');
-      if (modalIdElement) {
-        modalIdElement.textContent = idLimpo;
-      }
-
-      // Grava também o ID no input oculto de controle do modal para consistência
-      const inputIdReal = document.getElementById('modal-pedido-id-real');
-      if (inputIdReal) {
-        inputIdReal.value = idLimpo;
-      }
-
-      // 2. VINCULAÇÃO DIRETA: Grava o ID em cada nó da linha do tempo
-      document.querySelectorAll('.step-node').forEach(node => {
-        node.setAttribute('data-pedido-ativo', idLimpo);
-      });
-
-      // 3. Pinta a linha do tempo visualmente
-      if (typeof atualizarTimelineVisual === 'function') {
-        atualizarTimelineVisual(statusLimpo);
-      }
-
-      // 4. Abre o modal do Bootstrap
-      const modalElement = document.getElementById('status-pedido');
-      if (modalElement) {
-        const modalBootstrap = bootstrap.Modal.getOrCreateInstance(modalElement);
-        modalBootstrap.show();
-      }
+    
+      console.log("-> [DOM Isolado] Auditoria das 5 esferas internas do modal de acompanhamento:");
+      console.table(relatorioAuditoria);
+      console.groupEnd();
     }
 
     // ATUALIZADOR E ESCUTADOR DE CLIQUE DOS STATUS DA TIMELINE (AJUSTADO PARA FLASK)
     document.querySelectorAll('.step-node').forEach(node => {
       node.addEventListener('click', function() {
+        if (document.activeElement && typeof document.activeElement.blur === "function") {
+          document.activeElement.blur();
+        }
+      
         const pedidoId = this.getAttribute('data-pedido-ativo');
         const novoStatus = this.getAttribute('data-status');
       
-        if (!pedidoId || isNaN(pedidoId) || parseInt(pedidoId) <= 0) {
-          console.warn('Aviso: ID de pedido inválido para atualização de status.');
-          return; 
-        }
+        if (!pedidoId) return;
       
-        // Faz a requisição assíncrona POST para a API do Flask
         fetch(`/api/pedidos/${pedidoId}/update`, {
           method: 'POST',
           headers: {
@@ -1137,38 +1128,51 @@
           body: JSON.stringify({ status: novoStatus })
         })
         .then(response => {
-          if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+          if (!response.ok) throw new Error("Erro na resposta do Flask.");
           return response.json();
         })
         .then(data => {
           if (data.success) {
-            // 1. Redesenha a barra e as cores das bolinhas instantaneamente no modal aberto
+            // A. Atualiza a timeline interna do modal aberto imediatamente
             atualizarTimelineVisual(novoStatus);
           
-            // 2. Localiza a linha correspondente na tabela principal de fundo
-            const linhaTabela = document.querySelector(`tr[onclick*="carregarEDispararModal('${pedidoId}'"]`) || 
-                                document.querySelector(`tr[onclick*="carregarEDispararModal(${pedidoId}"]`);
+            // B. CORREÇÃO DO SELETOR: Varre a linha testando o ID com e sem aspas para nunca falhar no Flask
+            const linhaTabela = document.querySelector(`tr[data-visual-id="${data.order_id}"]`) || 
+                                document.querySelector(`tr[onclick*="'${pedidoId}'"]`) ||
+                                document.querySelector(`tr[onclick*="${pedidoId}"]`);
 
             if (linhaTabela) {
-              // CORREÇÃO CRÍTICA DO TRAVAMENTO: Ajustado o nome correto da função para 'carregarEDispararModal'
-              linhaTabela.setAttribute('onclick', `carregarEDispararModal('${pedidoId}', '${novoStatus}')`);
+              // Garante que o gatilho de clique seja atualizado com o novo status
+              const numeroSequencialAtual = document.getElementById('modal-id-pedido')?.textContent || pedidoId;
+              linhaTabela.setAttribute('onclick', `abrirModalFluxoPedido('${pedidoId}', '${numeroSequencialAtual}')`);
+            
+              const celulaStatus = linhaTabela.querySelector('[data-field="status"]');
+              if (celulaStatus) {
+                // Atualiza o atributo data-original usado pela nossa telemetria assíncrona
+                celulaStatus.setAttribute('data-original', novoStatus);
 
-              // CORREÇÃO CRÍTICA DO "PR": Mapeia a sigla para o nome amigável completo que vai para a tabela
-              const badgeStatus = linhaTabela.querySelector('[data-field="status"] span');
-              if (badgeStatus) {
-                const dicionarioNomes = { 
-                  'R': 'Realizado', 
-                  'EP': 'Em Preparação', 
-                  'PR': 'Pronto p/ Retirada', 
-                  'F': 'Finalizado', 
-                  'C': 'Cancelado' 
-                };
+                const badgeSpan = celulaStatus.querySelector('span');
+                if (badgeSpan) {
+                  const dicionarioNomes = { 
+                    'R': 'Realizado', 
+                    'EP': 'Em Preparação', 
+                    'PR': 'Pronto p/ Retirada', 
+                    'F': 'Finalizado', 
+                    'C': 'Cancelado' 
+                  };
 
-                // Injeta o texto completo traduzido na tabela
-                badgeStatus.textContent = dicionarioNomes[novoStatus] || novoStatus;
+                  // Altera o texto visível da Badge para português por extenso
+                  badgeSpan.textContent = dicionarioNomes[novoStatus] || novoStatus;
 
-                // Atualiza dinamicamente as classes de cores do Bootstrap na tabela de fundo
-                badgeStatus.className = `badge ${novoStatus === 'F' ? 'bg-success' : novoStatus === 'C' ? 'bg-danger' : 'bg-warning text-white'} px-2 py-1 small`;
+                  // Altera a classe de cor da Badge na tabela de fundo instantaneamente
+                  let classeCor = 'bg-warning text-white';
+                  if (novoStatus === 'F') classeCor = 'bg-success';
+                  else if (novoStatus === 'C') classeCor = 'bg-danger';
+                  else if (novoStatus === 'EP') classeCor = 'bg-primary';
+                  else if (novoStatus === 'PR') classeCor = 'bg-purple';
+
+                  badgeSpan.className = `badge ${classeCor} px-2 py-1 small`;
+                }
               }
             }
           } else {
@@ -1176,12 +1180,101 @@
           }
         })
         .catch(error => {
-          console.error('Erro na requisição do Flask:', error);
-          alert('Não foi possível sincronizar o status com o servidor.');
+          console.error('Erro de rede no Flask:', error);
         });
       });
     });
+
+    // GATILHO MESTRE ASSÍNCRONO: Novo nome para forçar a limpeza do cache do navegador
+    function abrirModalFluxoPedido(idBanco, orderId) {
+      console.group("============= [TELEMETRIA] ABERTURA DE MODAL ASSÍNCRONO =============");
+
+      const idLimpo = String(idBanco).trim();
+      const orderIdLimpo = String(orderId).trim();
     
+      const modalIdElement = document.getElementById('modal-id-pedido');
+      if (modalIdElement) modalIdElement.textContent = orderIdLimpo;
+    
+      const inputIdReal = document.getElementById('modal-pedido-id-real');
+      if (inputIdReal) inputIdReal.value = idLimpo;
+    
+      document.querySelectorAll('.step-node').forEach(node => {
+        node.setAttribute('data-pedido-ativo', idLimpo);
+      });
+    
+      const modalElement = document.getElementById('status-pedido');
+      if (modalElement) {
+        const modalBootstrap = bootstrap.Modal.getOrCreateInstance(modalElement);
+        modalBootstrap.show();
+      
+        // Consulta os dados completos do pedido direto no banco do Flask
+        fetch(`/api/pedido/${idLimpo}`)
+          .then(response => {
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            return response.json();
+          })
+          .then(dados => {
+            // A. Configura a Timeline
+            const statusRealDoBanco = dados.status ? String(dados.status).trim().toUpperCase() : "R";
+            atualizarTimelineVisual(statusRealDoBanco);
+
+            // B. CORREÇÃO: Preenche dinamicamente o nome e celular do cliente real protegendo contra nulos
+            if (document.getElementById('modal-cliente-pedido')) {
+              document.getElementById('modal-cliente-pedido').textContent = dados.customer_name || 'Cliente Balcão';
+            }
+
+            if (document.getElementById('modal-celular-pedido')) {
+              document.getElementById('modal-celular-pedido').textContent = dados.customer_phone || 'Não informado';
+            }
+          
+            // C. Preenche o cabeçalho das observações e trata o valor total de forma segura contra None
+            if (document.getElementById('modal-observacao-pedido')) {
+              document.getElementById('modal-observacao-pedido').textContent = dados.observation ? dados.observation.trim() : "Nenhuma observação informada.";
+            }
+
+            if (document.getElementById('modal-total-pedido')) {
+              // O uso de parseFloat(dados.total_value || 0) blinda contra o erro de toFixed em nulos
+              const valorTotalLimpo = parseFloat(dados.total_value || 0);
+              document.getElementById('modal-total-pedido').textContent = `R$ ${valorTotalLimpo.toFixed(2).replace('.', ',')}`;
+            }
+          
+            // D. Renderiza as fileiras de produtos comprados na tabela interna
+            const tbodyItens = document.getElementById('modal-itens-tbody');
+            if (tbodyItens) {
+              tbodyItens.innerHTML = ""; // Limpa resíduos de faturas anteriores
+            
+              if (dados.itens && dados.itens.length > 0) {
+                let htmlItens = "";
+                dados.itens.forEach(item => {
+                  const precoUnitario = parseFloat(item.unit_price || 0);
+                  const quantidade = parseInt(item.quantity || 1);
+                  const subtotalItem = quantidade * precoUnitario;
+
+                  htmlItens += `
+                    <tr>
+                      <td class="ps-3 py-2 text-dark font-weight-medium">${item.product_name || "Item sem Nome"}</td>
+                      <td class="text-center py-2 fw-bold text-secondary">${quantidade}</td>
+                      <td class="text-end py-2">R$ ${precoUnitario.toFixed(2).replace('.', ',')}</td>
+                      <td class="text-end pe-3 py-2 text-success fw-bold">R$ ${subtotalItem.toFixed(2).replace('.', ',')}</td>
+                    </tr>
+                  `;
+                });
+                tbodyItens.innerHTML = htmlItens;
+              } else {
+                tbodyItens.innerHTML = `<tr><td colspan="4" class="text-center text-muted py-3">Nenhum produto cadastrado neste pedido.</td></tr>`;
+              }
+            }
+            console.groupEnd();
+          })
+          .catch(error => {
+            console.error("!! [API Erro Critical] Falha ao injetar dados no modal por incompatibilidade:", error);
+            atualizarTimelineVisual("R");
+            console.groupEnd();
+          });
+      }
+    }
+
+
     // FUNÇÃO DO BOTÃO EDITAR PEDIDO: Abre a vitrine em modo de edição
     async function abrirEdicaoPedido() {
       const idPedido = document.getElementById('modal-pedido-id-real').value;

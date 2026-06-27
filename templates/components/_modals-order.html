@@ -166,149 +166,151 @@
   </div>
 </div>
 
-<!-- Modal 2: Acompanhamento do Pedido-->
+<!-- Modal 2: Acompanhamento do Pedido (Padronizado em 14,5px e Ícones Expandidos) -->
 <div class="modal fade" id="status-pedido" tabindex="-1" aria-labelledby="modalPedidoLabel" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered" style="max-width: 650px;">
-    <div class="modal-content rounded-3 shadow border-0 overflow-hidden">
+  <div class="modal-dialog modal-dialog-centered" style="max-width: 750px;">
+    <div class="modal-content rounded-3 shadow border-0 overflow-hidden" style="font-size: 14.5px !important;">
         
       <!-- Campo oculto para controle de ID via JS -->
       <input type="hidden" id="modal-pedido-id-real" value="">
 
-      <!-- Cabeçalho do Modal Compacto -->
-      <div class="modal-header bg-light border-bottom py-2 px-3">
-        <h6 class="modal-title fw-bold text-dark m-0" id="modalPedidoLabel">
+      <!-- Cabeçalho do Modal -->
+      <div class="modal-header bg-light border-bottom py-2.5 px-3">
+        <h6 class="modal-title fw-bold text-dark m-0" id="modalPedidoLabel" style="font-size: 15px !important;">
           <i class="fas fa-box-open text-primary me-2"></i>Detalhes do Pedido #<span id="modal-id-pedido">1000000</span>
         </h6>
-        <button type="button" class="btn-close shadow-none small" data-bs-dismiss="modal" aria-label="Close" style="font-size: 0.75rem;"></button>
+        <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal" aria-label="Close" style="font-size: 0.85rem;"></button>
       </div>
       
       <!-- Corpo do Modal -->
       <div class="modal-body p-3">
           
-        <!-- 1. Barra de Ações Superior (Botão Editar Pedido) -->
-        <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
+        <!-- 1. Barra de Ações Superior -->
+        <div class="d-flex justify-content-between align-items-center mb-3.5 pb-2 border-bottom">
           <!-- Botão de Edição de Dados à Esquerda -->
-          <button type="button" class="btn btn-sm btn-primary d-flex align-items-center gap-1.5 px-2.5" onclick="abrirEdicaoPedido()">
-            <i class="fas fa-edit small"></i> Editar Pedido
+          <button type="button" class="btn btn-primary d-flex align-items-center gap-2 px-3 py-1.5 fw-semibold shadow-sm" onclick="abrirEdicaoPedido()" style="font-size: 14.5px !important; border-radius: 4px;">
+            <i class="fas fa-edit"></i> Editar Pedido
           </button>
           
           <!-- Botões Financeiros e de Impressão à Direita -->
-          <div class="d-flex gap-1.5">
-            <button type="button" id="btn-registrar-pagamento" class="btn btn-outline-success btn-sm d-flex align-items-center gap-1 px-2" onclick="marcarComoPago()">
+          <div class="d-flex gap-2">
+            <button type="button" id="btn-registrar-pagamento" class="btn btn-outline-success d-flex align-items-center gap-1.5 px-3 py-1.5 fw-semibold shadow-sm" onclick="marcarComoPago()" style="font-size: 14.5px !important; border-radius: 4px;">
               <i class="fas fa-dollar-sign"></i> Pagar
             </button>
-            <button type="button" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1 px-2" onclick="imprimirPedido()">
+            <button type="button" class="btn btn-outline-secondary d-flex align-items-center gap-1.5 px-3 py-1.5 fw-semibold shadow-sm" onclick="imprimirPedido()" style="font-size: 14.5px !important; border-radius: 4px;">
               <i class="fas fa-print"></i> Imprimir
             </button>
           </div>
         </div>
         
-        <!-- 2. Linha do Tempo Horizontal Compacta (Corrigido: Barra presa estritamente entre as bordas dos círculos) -->
-        <div class="mb-4 mt-2 position-relative" style="padding: 0 16px;">
-          
-          <!-- BARRA CINZA DE FUNDO: Recuada 16px de cada lado para nascer e morrer colada na face dos círculos -->
-          <div class="position-absolute bg-secondary opacity-25" style="height: 4px; top: 16px; left: 60px; right: 80px; z-index: 1;"></div>
-          
-          <!-- BARRA COLORIDA DE PROGRESSO: Segue o mesmo trilho sem transpassar as extremidades -->
-          <div id="barra-progresso-modal" class="position-absolute bg-primary" style="height: 4px; top: 16px; left: 60px; width: 0%; z-index: 2; transition: all 0.4s ease;"></div>
-        
-          <!-- Contêiner dos Nós alinhado por cima das barras (z-index: 3) -->
-          <div class="d-flex justify-content-between align-items-center position-relative" style="z-index: 3;">
-          
+        <!-- 2. Linha do Tempo Horizontal (Ajustada com círculos de 40px) -->
+        <div class="mb-4 mt-3" style="padding: 0 20px;">
+          <div class="d-flex justify-content-between position-relative align-items-center" style="z-index: 1;">
+            
+            <!-- Linha de Fundo Cinza (Centralizada no eixo de 40px -> top: 20px) -->
+            <div class="position-absolute bg-secondary opacity-25" style="height: 4px; top: 20px; left: 60px; right: 60px; z-index: 1;"></div>
+            
+            <!-- Linha de Progresso Colorida -->
+            <div id="barra-progresso-modal" class="position-absolute bg-primary" style="height: 4px; top: 20px; left: 60px; width: 0%; z-index: 2; transition: all 0.4s ease;"></div>
+    
             <!-- Etapa 1: Realizado (R) -->
-            <div class="text-center flex-grow-1 step-node" id="step-recebido" data-status="R" style="cursor: pointer;">
-              <!-- Retornado ao tamanho original destacado de 32px x 32px -->
-              <div class="step-icon rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center mx-auto shadow-sm" style="width: 32px; height: 32px; transition: all 0.3s; font-size: 0.85rem;">
+            <div class="text-center flex-grow-1 step-node" id="step-recebido" data-status="R" style="cursor: pointer; z-index: 3;">
+              <div class="step-icon rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center mx-auto shadow" style="width: 40px; height: 40px; transition: all 0.3s; font-size: 1.05rem;">
                 <i class="fas fa-shopping-cart"></i>
               </div>
-              <div class="fw-bold text-muted small mt-2 step-label" style="font-size: 0.75rem;">Realizado</div>
+              <div class="fw-bold text-muted mt-2 step-label" style="font-size: 13.5px !important; line-height: 1.2;">Realizado</div>
             </div>
-          
+    
             <!-- Etapa 2: Em Preparação (EP) -->
-            <div class="text-center flex-grow-1 step-node" id="step-preparacao" data-status="EP" style="cursor: pointer;">
-              <div class="step-icon rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center mx-auto" style="width: 32px; height: 32px; transition: all 0.3s; font-size: 0.85rem;">
+            <div class="text-center flex-grow-1 step-node" id="step-preparacao" data-status="EP" style="cursor: pointer; z-index: 3;">
+              <div class="step-icon rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center mx-auto shadow" style="width: 40px; height: 40px; transition: all 0.3s; font-size: 1.05rem;">
                 <i class="fas fa-clock"></i>
               </div>
-              <div class="fw-semibold text-muted small mt-2 step-label" style="font-size: 0.75rem;">Em Preparo</div>
+              <div class="fw-semibold text-muted mt-2 step-label" style="font-size: 13.5px !important; line-height: 1.2;">Em Preparo</div>
             </div>
-          
+    
             <!-- Etapa 3: Pronto para Retirada (PR) -->
-            <div class="text-center flex-grow-1 step-node" id="step-entrega" data-status="PR" style="cursor: pointer;">
-              <div class="step-icon rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center mx-auto" style="width: 32px; height: 32px; transition: all 0.3s; font-size: 0.85rem;">
+            <div class="text-center flex-grow-1 step-node" id="step-entrega" data-status="PR" style="cursor: pointer; z-index: 3;">
+              <div class="step-icon rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center mx-auto shadow" style="width: 40px; height: 40px; transition: all 0.3s; font-size: 1.05rem;">
                 <i class="fas fa-store"></i>
               </div>
-              <div class="fw-semibold text-muted small mt-2 step-label" style="font-size: 0.75rem;">Pronto p/ Retirada</div>
+              <div class="fw-semibold text-muted mt-2 step-label" style="font-size: 13.5px !important; line-height: 1.2;">Pronto p/ Retirada</div>
             </div>
-          
+    
             <!-- Etapa 4: Finalizado (F) -->
-            <div class="text-center flex-grow-1 step-node" id="step-finalizado" data-status="F" style="cursor: pointer;">
-              <div class="step-icon rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center mx-auto" style="width: 32px; height: 32px; transition: all 0.3s; font-size: 0.85rem;">
+            <div class="text-center flex-grow-1 step-node" id="step-finalizado" data-status="F" style="cursor: pointer; z-index: 3;">
+              <div class="step-icon rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center mx-auto shadow" style="width: 40px; height: 40px; transition: all 0.3s; font-size: 1.05rem;">
                 <i class="fas fa-check"></i>
               </div>
-              <div class="fw-semibold text-muted small mt-2 step-label" style="font-size: 0.75rem;">Finalizado</div>
+              <div class="fw-semibold text-muted mt-2 step-label" style="font-size: 13.5px !important; line-height: 1.2;">Finalizado</div>
             </div>
-          
+    
             <!-- Etapa 5: Cancelado (C) -->
-            <div class="text-center flex-grow-1 step-node" id="step-cancelado" data-status="C" style="cursor: pointer;">
-              <div class="step-icon rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center mx-auto" style="width: 32px; height: 32px; transition: all 0.3s; font-size: 0.85rem;">
+            <div class="text-center flex-grow-1 step-node" id="step-cancelado" data-status="C" style="cursor: pointer; z-index: 3;">
+              <div class="step-icon rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center mx-auto shadow" style="width: 40px; height: 40px; transition: all 0.3s; font-size: 1.05rem;">
                 <i class="fas fa-times"></i>
               </div>
-              <div class="fw-semibold text-muted small mt-2 step-label" style="font-size: 0.75rem;">Cancelado</div>
+              <div class="fw-semibold text-muted mt-2 step-label" style="font-size: 13.5px !important; line-height: 1.2;">Cancelado</div>
             </div>
-          
           </div>
         </div>
 
         <!-- 3. Resumo do Cliente e Pagamento -->
-        <div class="row bg-light rounded py-2 px-1 mb-2 mx-0 border" style="font-size: 0.82rem;">
-          <div class="col-4">
-            <span class="text-muted d-block" style="font-size: 0.7rem;">Cliente:</span>
-            <strong class="text-dark" id="modal-cliente-pedido">Ronaldo</strong>
+        <div class="row bg-light rounded py-2.5 px-2 mb-3 mx-0 border" style="font-size: 14.5px !important;">
+          <div class="col-4 border-end">
+            <span class="text-muted d-block fw-semibold text-uppercase mb-0.5" style="font-size: 11px !important; letter-spacing: 0.5px;">Cliente</span>
+            <strong class="text-dark d-block text-truncate" id="modal-cliente-pedido">Ronaldo</strong>
+          </div>
+          <div class="col-4 border-end">
+            <span class="text-muted d-block fw-semibold text-uppercase mb-0.5" style="font-size: 11px !important; letter-spacing: 0.5px;">Celular</span>
+            <span class="text-dark d-block" id="modal-celular-pedido">(11) 99999-9999</span>
           </div>
           <div class="col-4">
-            <span class="text-muted d-block" style="font-size: 0.7rem;">Celular:</span>
-            <span class="text-dark" id="modal-celular-pedido">(11) 99999-9999</span>
-          </div>
-          <div class="col-4">
-            <span class="text-muted d-block" style="font-size: 0.7rem;">Pagamento:</span>
-            <div id="container-status-pagamento" class="d-flex align-items-center" style="min-height: 18px;"></div>
+            <span class="text-muted d-block fw-semibold text-uppercase mb-0.5" style="font-size: 11px !important; letter-spacing: 0.5px;">Pagamento</span>
+            <div id="container-status-pagamento" class="d-flex align-items-center fw-bold" style="min-height: 20px;"></div>
           </div>
         </div>
 
-        <!-- 4. Observação do Pedido -->
-        <div class="bg-light rounded p-2 mb-3 mx-0 border border-warning" style="background-color: #fffdf5 !important; font-size: 0.8rem;">
-          <span class="text-warning-dark fw-bold d-block mb-0.5" style="font-size: 0.72rem;">
-            <i class="fas fa-exclamation-circle me-1"></i>Observações
+        <!-- 4. Observação do Pedido (Adicionado mb-4 para criar maior espaçamento) -->
+        <div class="bg-light rounded p-2.5 mb-4 mx-0 border border-warning" style="background-color: #fffdf5 !important; font-size: 14.5px !important;">
+          <span class="text-warning-dark fw-bold d-block mb-1 text-uppercase" style="font-size: 11.5px !important; letter-spacing: 0.5px;">
+            <i class="fas fa-exclamation-circle me-1"></i>Observações do Caixa
           </span>
-          <p class="text-dark mb-0 lh-sm" id="modal-observacao-pedido">
+          <p class="text-dark mb-0 lh-base" id="modal-observacao-pedido">
             Nenhuma observação informada.
           </p>
         </div>
 
-        <!-- 5. Tabela de Itens em Altura Reduzida (Cabeçalho "Itens Inclusos" removido completamente) -->
-        <div class="border rounded shadow-sm overflow-hidden mb-3">
-          <div class="table-responsive" style="max-height: 160px; overflow-y: auto;">
-            <table class="table table-hover align-middle mb-0 text-nowrap" id="tableModalItens" style="font-size: 0.82rem;">
-              <thead class="table-light fs-7 text-muted text-uppercase" style="font-size: 0.7rem;">
+        <!-- 5. Tabela de Itens Expandida -->
+        <div class="border rounded shadow-sm overflow-hidden mb-3.5">
+          <div class="table-responsive" style="max-height: 200px; overflow-y: auto;">
+            <table class="table table-hover align-middle mb-0 text-nowrap" id="tableModalItens" style="font-size: 14.5px !important;">
+              <thead class="table-light text-muted text-uppercase" style="font-size: 11.5px !important; letter-spacing: 0.5px;">
                 <tr>
-                  <th scope="col" class="ps-3 py-1">Produto</th>
-                  <th scope="col" class="text-center py-1" style="width: 80px;">Qtd</th>
-                  <th scope="col" class="text-end py-1" style="width: 100px;">Vlr. Unit.</th>
-                  <th scope="col" class="text-end pe-3 py-1" style="width: 100px;">Subtotal</th>
+                  <th scope="col" class="ps-3 py-2">Produto</th>
+                  <th scope="col" class="text-center py-2" style="width: 90px;">Qtd</th>
+                  <th scope="col" class="text-end py-2" style="width: 120px;">Vlr. Unit.</th>
+                  <th scope="col" class="text-end pe-3 py-2" style="width: 120px;">Subtotal</th>
                 </tr>
               </thead>
-              <tbody id="modal-itens-tbody" class="text-dark small">
-                <!-- Injetado dinamicamente via JS -->
+              <tbody id="modal-itens-tbody" class="text-dark fw-medium">
+                <!-- Injetado dinamicamente via JavaScript -->
               </tbody>
             </table>
           </div>
-        </div>
-
-        <!-- 6. Total Geral Formatado Compacto -->
-        <div class="d-flex justify-content-end align-items-center pe-2">
-          <div class="d-flex align-items-center gap-2">
-            <span class="text-muted text-uppercase fw-bold" style="font-size: 0.72rem;">Total do Pedido:</span>
-            <strong class="text-success fs-5 fw-bold" id="modal-total-pedido">R$ 0,00</strong>
+        </div><br>
+        
+        <!-- 6. Total Geral Formatado e Equilibrado (Tamanhos ajustados para 15px) -->
+        <div class="d-flex justify-content-end align-items-center pe-1 py-1">
+          <div class="d-flex align-items-center gap-2.5">
+            <!-- Ajustado para 15px, text-dark e fw-bold para alinhar com o preço -->
+            <span class="text-dark text-uppercase fw-bold" style="font-size: 16px !important; letter-spacing: 0.5px;">
+              Total Pedido&nbsp;&nbsp; 
+            </span>
+            <!-- Ajustado para 18px para manter o alinhamento de altura com a fonte 15px -->
+            <strong class="text-success fw-black" id="modal-total-pedido" style="font-size: 16.5px !important; letter-spacing: -0.5px;">
+              R$ 0,00
+            </strong>
           </div>
         </div>
 

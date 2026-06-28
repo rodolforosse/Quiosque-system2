@@ -154,11 +154,14 @@ def atualizar_status_pedido(pedido_id):
 
 @api_bp.route('/api/pedido/<int:id>', methods=['GET'])
 def obter_pedido_detalhes(id):
-  """Retorna os dados cadastrais e as linhas do carrinho de um pedido para a API do JS"""
+  """
+  Rota da API do Flask que puxa os dados cadastrais e as linhas do carrinho
+  para alimentar tanto a timeline visual quanto a abertura do formulário de edição.
+  """
   pedido = Orders.query.get_or_404(id)
   
   itens_formatados = []
-  for item in pedido.itens:  # Varre os OrderItems vinculados
+  for item in pedido.itens:  # Varre os OrderItems vinculados a este pedido
     itens_formatados.append({
       "product_id": item.product_id,
       "product_name": item.product.name if item.product else "Item Desconhecido",
@@ -166,10 +169,15 @@ def obter_pedido_detalhes(id):
       "unit_price": float(item.unit_price)
     })
     
+  # RETORNO JSON SEGURO: Alinha as chaves perfeitamente com os fetchs do JavaScript
   return jsonify({
     "id": pedido.id,
     "order_id": pedido.order_id,
     "delivery": pedido.delivery,
+    
+    # LINHA OBRIGATÓRIA DA TIMELINE: Envia a sigla crua salva no banco (R, EP, PR, F, C)
+    "status": str(pedido.status).strip().upper() if pedido.status else "R",
+    
     "observation": pedido.observation or "",
     "discount": float(pedido.discount) if pedido.discount else 0.0,
     "customer_document": pedido.customer.document if pedido.customer else "",

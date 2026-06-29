@@ -1,12 +1,8 @@
 # Caixa/__init__.py
 from flask import Blueprint, render_template
 from extensions import admin as flask_admin, db, admin_required
-from Caixa.admin import CaixaAdminView, MovimentacaoCaixaAdminView
-from Caixa.models import Caixa, MovimentacaoCaixa
-
-# Registra as views de admin
-flask_admin.add_view(CaixaAdminView(Caixa, db.session, name="Caixas", category="Financeiro"))
-flask_admin.add_view(MovimentacaoCaixaAdminView(MovimentacaoCaixa, db.session, name="Movimentações", category="Financeiro"))
+# from Caixa.admin import CaixaAdminView, MovimentacaoCaixaAdminView
+from models import Caixa, MovimentacaoCaixa
 
 # Cria o blueprint de Caixa
 caixa_bp = Blueprint('caixa', __name__)
@@ -48,3 +44,7 @@ def create_view():
         }
     
     return render_template('site/caixa.html', caixa=dados_caixa)
+
+# Registra as views de admin
+# flask_admin.add_view(CaixaAdminView(Caixa, db.session, name="Caixas", category="Financeiro"))
+# flask_admin.add_view(MovimentacaoCaixaAdminView(MovimentacaoCaixa, db.session, name="Movimentações", category="Financeiro"))

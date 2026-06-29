@@ -4,15 +4,9 @@ from extensions import admin, db, security
 from flask_admin.menu import MenuLink
 from flask_wtf.csrf import CSRFProtect
 from flask_security import SQLAlchemyUserDatastore, hash_password
-from Usuarios.admin import SecureAdminIndexView 
-from Produtos import produtos_bp
-from Usuarios import usuarios_bp
-from Dashboard import dashboard_bp
-from Caixa import caixa_bp
-from Pedidos import pedidos_bp
-from crm import crm_bp
-from api import api_bp
-from Usuarios.models import User, Role
+from admin.usuarios import SecureAdminIndexView 
+from Blueprint import *
+import models
 
 # Objeto de proteção global
 csrf = CSRFProtect()
@@ -42,7 +36,7 @@ def create_app():
 
     admin.add_link(MenuLink(name='Sair', endpoint='security.logout', category=''))
     
-    user_datastore = SQLAlchemyUserDatastore(db, User, Role)
+    user_datastore = SQLAlchemyUserDatastore(db, models.User, models.Role)
     security.init_app(app, user_datastore)
    
     # Registra todos os blueprints
@@ -62,8 +56,8 @@ def create_app():
             user_datastore.create_user(
                 email='admin@teste.com',
                 password=hash_password('admin123'),
-                is_superuser=True,  # Ganha acesso livre automático a todos os botões
-                is_staff=True,      # Permissão de fazer login no painel
+                is_superuser=True,
+                is_staff=True,  
                 fs_uniquifier=secrets.token_hex(16)
             )
         db.session.commit()

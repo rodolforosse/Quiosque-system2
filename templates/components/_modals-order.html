@@ -4,7 +4,7 @@
     <div class="modal-content h-100 d-flex flex-column overflow-hidden">
         
       <!-- Formulário com ID atualizado para sabermos se é POST (Novo) ou PUT/PATCH (Editar) -->
-      <form id="formNovoPedido" method="POST" action="{{ url_for('pedidos.create_view') }}" class="d-flex flex-column h-100 m-0">
+      <form id="formNovoPedido" method="POST" action="{{ url_for('api.create_view') }}" class="d-flex flex-column h-100 m-0">
         
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <input type="hidden" id="input_json_itens" name="itens_pedido">
@@ -167,7 +167,7 @@
 </div>
 
 <!-- Modal 2: Acompanhamento do Pedido (Padronizado em 14,5px e Ícones Expandidos) -->
-<div class="modal fade" id="status-pedido" tabindex="-1" aria-labelledby="modalPedidoLabel" aria-hidden="true">
+<div class="modal fade" id="status-pedido" tabindex="-1" aria-labelledby="modalPedidoLabel" aria-hidden="true"> <!-- status-pedido -->
   <div class="modal-dialog modal-dialog-centered" style="max-width: 750px;">
     <div class="modal-content rounded-3 shadow border-0 overflow-hidden" style="font-size: 14.5px !important;">
         
@@ -177,7 +177,7 @@
       <!-- Cabeçalho do Modal -->
       <div class="modal-header bg-light border-bottom py-2.5 px-3">
         <h6 class="modal-title fw-bold text-dark m-0" id="modalPedidoLabel" style="font-size: 15px !important;">
-          <i class="fas fa-box-open text-primary me-2"></i>Detalhes do Pedido #<span id="modal-id-pedido">1000000</span>
+          <i class="fas fa-box-open text-primary me-2"></i>Detalhes do Pedido #<span id="modal-id-pedido"></span>
         </h6>
         <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal" aria-label="Close" style="font-size: 0.85rem;"></button>
       </div>
@@ -259,11 +259,11 @@
         <div class="row bg-light rounded py-2.5 px-2 mb-3 mx-0 border" style="font-size: 14.5px !important;">
           <div class="col-4 border-end">
             <span class="text-muted d-block fw-semibold text-uppercase mb-0.5" style="font-size: 11px !important; letter-spacing: 0.5px;">Cliente</span>
-            <strong class="text-dark d-block text-truncate" id="modal-cliente-pedido">Ronaldo</strong>
+            <strong class="text-dark d-block text-truncate" id="modal-cliente-pedido"></strong>
           </div>
           <div class="col-4 border-end">
             <span class="text-muted d-block fw-semibold text-uppercase mb-0.5" style="font-size: 11px !important; letter-spacing: 0.5px;">Celular</span>
-            <span class="text-dark d-block" id="modal-celular-pedido">(11) 99999-9999</span>
+            <span class="text-dark d-block" id="modal-celular-pedido"></span>
           </div>
           <div class="col-4">
             <span class="text-muted d-block fw-semibold text-uppercase mb-0.5" style="font-size: 11px !important; letter-spacing: 0.5px;">Pagamento</span>

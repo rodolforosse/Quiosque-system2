@@ -287,7 +287,7 @@
           // HTML estruturado em linha horizontal idêntico à foto
           html += `
             <div class="card-produto-linha d-flex align-items-center justify-content-between py-2 border-bottom text-decoration-none" 
-                 onclick="adicionarProdutoAoPedidoById('${produto.order_id}')"
+                 onclick="adicionarProdutoAoPedidoById('${produto.id}')"
                  style="cursor: pointer; transition: background 0.2s; min-height: 48px;">
 
               <!-- Lado Esquerdo: Imagem, Código e Nome com Link Sublinhado -->
@@ -1208,7 +1208,7 @@
         modalBootstrap.show();
       
         // Consulta os dados completos do pedido direto no banco do Flask
-        fetch(`/api/pedido/${idLimpo}`)
+        fetch(`/api/pedidos/${idLimpo}`)
           .then(response => {
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
             return response.json();
@@ -1320,7 +1320,7 @@
     
       // 7. Faz a busca assíncrona dos itens que já pertencem a este pedido específico no banco
       try {
-        const response = await fetch(`/api/pedido/${idPedido}`);
+        const response = await fetch(`/api/pedidos/${idPedido}`);
         if (!response.ok) throw new Error("Erro ao buscar dados do pedido.");
 
         const dados = await response.json();

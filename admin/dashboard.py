@@ -1,5 +1,5 @@
 # produtos/admin.py
-from Usuarios.admin import SecureModelView
+from admin.usuarios import SecureModelView
 # from Dashboard.models import Dashboard
 
 # class DashAdminView(SecureModelView):

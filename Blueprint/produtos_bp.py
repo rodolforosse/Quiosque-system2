@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template
 from extensions import admin as flask_admin, db, admin_required
-from Produtos.admin import ProductsAdminView, CategoryAdminView
-from Produtos.models import Products
+from admin.produtos import ProductsAdminView, CategoryAdminView
+from models import Products
 
 
 flask_admin.add_view(CategoryAdminView(db.session, name="Categorias", category="Catálogo"))

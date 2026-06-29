@@ -1,9 +1,10 @@
 # Pedidos/admin.py
-from Usuarios.admin import SecureModelView
-from Pedidos.models import Orders, OrderItems
+from extensions import admin as flask_admin, db
+from admin.usuarios import SecureModelView
+from models import Orders, OrderItems
 
 # Formatador personalizado para exibir o valor em formato de Real (R$) na tabela do Admin
-def formatar_moeda(view, context, model, name):
+def formatar_moeda(model, name):
     valor = getattr(model, name)
     return f"R$ {valor:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".") if valor else "R$ 0,00"
 
@@ -67,6 +68,8 @@ class OrdersAdminView(SecureModelView):
         ]
     }
 
+    def __init__(self, session, **kwargs):
+        super(OrdersAdminView, self).__init__(Orders, session, **kwargs)
 
 class OrderItemsAdminView(SecureModelView):
     """
@@ -106,3 +109,9 @@ class OrderItemsAdminView(SecureModelView):
     
     # 5. Apenas visualização
     form_columns = []
+
+    def __init__(self, session, **kwargs):
+        super(OrderItemsAdminView, self).__init__(OrderItems, session, **kwargs)
+
+flask_admin.add_view(OrdersAdminView(Orders, db.session, name="Pedidos", category="Vendas"))
+flask_admin.add_view(OrderItemsAdminView(OrderItems, db.session, name="Itens dos Pedidos", category="Vendas"))

@@ -3,9 +3,9 @@ from flask import Blueprint, render_template, request
 from sqlalchemy import func
 from extensions import admin as flask_admin, db, admin_required
 from datetime import datetime, timedelta
-from Pedidos.models import Orders, OrderItems
-from crm.models import Customers
-from Caixa.models import Caixa, MovimentacaoCaixa
+from models import Orders, OrderItems
+from models import Customers
+from models import Caixa, MovimentacaoCaixa
 
 # Cria o blueprint de dashboard
 dashboard_bp = Blueprint('dashboard', __name__)

@@ -3,13 +3,13 @@ from flask import Blueprint, render_template, redirect, url_for, flash
 from extensions import admin as flask_admin, db, admin_required
 from flask_admin import Admin
 from flask_admin.contrib.sqla import ModelView
-from Usuarios.admin import UserAdminView, RoleAdminView
-from Usuarios.models import User, Role
+from admin.usuarios import UserAdminView, RoleAdminView
+from models import User, Role
 from flask_security import hash_password
-from Usuarios.forms import UserForm
-from crm.models import Customers 
-from Pedidos.models import Orders, OrderItems
-from Produtos.models import Categories, Products
+from forms import UserForm
+from models import Customers 
+from models import Orders, OrderItems
+from models import Categories, Products
 
 usuarios_bp = Blueprint('usuarios', __name__)
 

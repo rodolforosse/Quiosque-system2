@@ -1,6 +1,6 @@
 # produtos/admin.py
-from Usuarios.admin import SecureModelView
-from Produtos.models import Products, Categories
+from admin.usuarios import SecureModelView
+from models import Products, Categories
 
 class CategoryAdminView(SecureModelView):
     column_list = ['id', 'name']

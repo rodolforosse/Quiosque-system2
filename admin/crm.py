@@ -1,7 +1,7 @@
 # crm/admin.py
-from flask import redirect, url_for, request
-from Usuarios.admin import SecureModelView
-from crm.models import Customers, Employees, Suppliers
+from extensions import admin as flask_admin, db
+from admin.usuarios import SecureModelView
+from models import Customers, Employees, Suppliers
 
 
 class CustomersAdminView(SecureModelView):
@@ -118,3 +118,9 @@ class SuppliersAdminView(SecureModelView):
     
     # 4. Formulário de Edição
     form_columns = ['nome', 'contato', 'telefone', 'email', 'endereco']
+
+
+# Registra as views de admin
+flask_admin.add_view(CustomersAdminView(Customers, db.session, name="Clientes", category="CRM"))
+flask_admin.add_view(EmployeesAdminView(Employees, db.session, name="Funcionários", category="CRM"))
+flask_admin.add_view(SuppliersAdminView(Suppliers, db.session, name="Fornecedores", category="CRM"))

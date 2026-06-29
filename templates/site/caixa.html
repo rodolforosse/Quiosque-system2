@@ -24,9 +24,7 @@
         
           <!-- Formulário Flask -->
           <form name="formCaixa" method="POST" class="ng-pristine ng-valid">
-              
-              {# Se você usa Flask-WTF para proteção contra ataques CSRF, descomente a linha abaixo #}
-              {# <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"> #}
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               
               <div class="row align-items-end g-3">
                   

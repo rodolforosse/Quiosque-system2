@@ -1,7 +1,7 @@
 # Pedidos/__init__.py
 from flask import Blueprint, render_template
-from extensions import admin_required
-from models import Orders
+from app.extensions import admin_required
+from app.models import Orders
 
 # Cria o blueprint de pedidos
 pedidos_bp = Blueprint('pedidos', __name__)

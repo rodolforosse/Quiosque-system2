@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 from flask_security import UserMixin, RoleMixin
-from extensions import db
+from app.extensions import db
 
 class AuthorizedDevice(db.Model):
     __tablename__ = 'authorized_device'
@@ -29,12 +29,12 @@ class AuthorizedDevice(db.Model):
         return f"<AuthorizedDevice {self.nome} - {self.identificador_unico}>"
 
 
-class Caixa(db.Model):
+class Caixadb(db.Model):
     """
     Modelo de Caixa para gerenciar abertura, fechamento e movimentações
     Rastreia todas as transações monetárias do ponto de venda
     """
-    __tablename__ = 'caixa'
+    __tablename__ = 'caixadb'
     
     id = db.Column(db.Integer, primary_key=True)
     
@@ -57,6 +57,9 @@ class Caixa(db.Model):
     
     user_fechamento_id = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='RESTRICT'), nullable=True)
     user_fechamento = db.relationship('User', foreign_keys=[user_fechamento_id], backref=db.backref('caixas_fechados', lazy=True))
+
+    # Relação para ver todas as movimentações deste caixa:
+    movimentacoes = db.relationship('MovimentacaoCaixa', back_populates='caixa', cascade='all, delete-orphan', lazy=True)
     
     # Observações
     observacoes = db.Column(db.Text, default="", nullable=False)
@@ -198,8 +201,9 @@ class MovimentacaoCaixa(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     
     # Relacionamento com Caixa
-    caixa_id = db.Column(db.Integer, db.ForeignKey('caixa.id', ondelete='CASCADE'), nullable=False)
-    caixa = db.relationship('Caixa', backref=db.backref('movimentacoes', cascade='all, delete-orphan', lazy=True))
+    caixa_id = db.Column(db.Integer, db.ForeignKey('caixadb.id', ondelete='CASCADE'), nullable=False)
+    # caixa = db.relationship('Caixadb', backref=db.backref('movimentacoes', cascade='all, delete-orphan', lazy=True))
+    caixa = db.relationship('Caixadb', back_populates='movimentacoes')
     
     # Relacionamento com Pedido (opcional - nem toda movimentação é um pedido)
     order_id = db.Column(db.Integer, db.ForeignKey('orders.id', ondelete='CASCADE'), nullable=True)

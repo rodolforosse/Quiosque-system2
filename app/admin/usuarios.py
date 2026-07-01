@@ -3,6 +3,7 @@ from flask import redirect, url_for, request, abort
 from flask_admin import AdminIndexView
 from flask_admin.contrib.sqla import ModelView
 from flask_security import current_user
+from app.models import User, Role
 
 # REGRAS DE ACESSO DA PÁGINA INICIAL /ADMIN
 class SecureAdminIndexView(AdminIndexView):
@@ -48,5 +49,11 @@ class UserAdminView(SecureModelView):
     # Define os campos visíveis no formulário de criação
     form_columns = ['email', 'password', 'is_staff', 'is_superuser', 'active', 'roles']
 
+    def __init__(self, session, **kwargs):
+        super(UserAdminView, self).__init__(User, session, **kwargs)
+
 class RoleAdminView(SecureModelView):
     column_list = ['id', 'name', 'description', 'permissions']
+
+    def __init__(self, session, **kwargs):
+        super(RoleAdminView, self).__init__(Role, session, **kwargs)

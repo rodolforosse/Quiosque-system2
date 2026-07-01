@@ -1,12 +1,6 @@
 from flask import Blueprint, render_template
-from extensions import admin as flask_admin, db, admin_required
-from admin.produtos import ProductsAdminView, CategoryAdminView
-from models import Products
-
-
-flask_admin.add_view(CategoryAdminView(db.session, name="Categorias", category="Catálogo"))
-flask_admin.add_view(ProductsAdminView(db.session, name="Produtos", category="Catálogo"))
-
+from app.extensions import admin_required
+from app.models import Products
 
 # Cria o blueprint de produtos
 produtos_bp = Blueprint('produtos', __name__)

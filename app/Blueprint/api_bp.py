@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify
-from extensions import db
-from models import (
+from app.extensions import db
+from app.models import (
   Customers,
   Orders, 
   OrderItems,

@@ -1,11 +1,9 @@
 # Dashboard/__init__.py
 from flask import Blueprint, render_template, request
 from sqlalchemy import func
-from extensions import admin as flask_admin, db, admin_required
+from app.extensions import db, admin_required
 from datetime import datetime, timedelta
-from models import Orders, OrderItems
-from models import Customers
-from models import Caixa, MovimentacaoCaixa
+from app.models import Orders, Customers
 
 # Cria o blueprint de dashboard
 dashboard_bp = Blueprint('dashboard', __name__)

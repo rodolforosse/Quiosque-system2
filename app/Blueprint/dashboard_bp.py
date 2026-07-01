@@ -1,4 +1,3 @@
-# Dashboard/__init__.py
 from flask import Blueprint, render_template, request
 from sqlalchemy import func
 from app.extensions import db, admin_required
@@ -13,7 +12,7 @@ dashboard_bp.menu_items = [
         'key': 'dashboard.index',
         'name': 'Dashboard',
         'icon': 'chart-line',
-        'order': 5,  # Ficará no topo
+        'order': 5,
         'children': []
     }
 ]
@@ -47,19 +46,12 @@ def get_date_range(periodo):
         fim = (hoje.replace(year=hoje.year-1, month=12, day=31, hour=23, minute=59, second=59))
         return (inicio, fim)
     
-    # Default: hoje
     return (hoje.replace(hour=0, minute=0, second=0), hoje.replace(hour=23, minute=59, second=59))
 
 
-# 1. ROTA PÚBLICA: Dashboard (ex: http://127.0.0.1/dashboard)
 @dashboard_bp.route('/dashboard')
 @admin_required()
 def index():
-    """
-    Dashboard com métricas em tempo real do sistema de vendas
-    Integra dados de Pedidos, Clientes e Caixa
-    """
-    # 1. Configuração do Dropdown de Períodos
     periodos = {
         'hoje': 'Hoje',
         'ontem': 'Ontem',
@@ -70,126 +62,144 @@ def index():
         'personalizado': 'Personalizado'
     }
     
-    # Captura o período selecionado na URL ou assume 'hoje' por padrão
     periodo_selecionado = request.args.get('periodo', 'hoje')
-    
-    # Obtém range de datas
     data_inicio, data_fim = get_date_range(periodo_selecionado)
     
-    # 2. CÁLCULO DE MÉTRICAS PRINCIPAIS (com dados reais do banco)
-    
-    # Total de Faturamento
-    total_faturamento = db.session.query(
-        func.sum(Orders.total_value)
-    ).filter(
+    # 2. CÁLCULO DE MÉTRICAS PRINCIPAIS
+    total_faturamento = db.session.query(func.sum(Orders.total_value)).filter(
         Orders.created_at >= data_inicio,
         Orders.created_at <= data_fim,
-        Orders.status != 'C'  # Exclui pedidos cancelados
+        Orders.status != 'C'
     ).scalar() or 0
     
-    # Total de Pedidos
     total_pedidos = db.session.query(func.count(Orders.id)).filter(
         Orders.created_at >= data_inicio,
         Orders.created_at <= data_fim,
         Orders.status != 'C'
     ).scalar() or 0
     
-    # Ticket Médio
     ticket_medio = float(total_faturamento) / total_pedidos if total_pedidos > 0 else 0
     
-    # Total de Clientes Ativos
     total_clientes = db.session.query(func.count(Customers.id)).filter(
         Customers.ativo == True
     ).scalar() or 0
     
-    # 3. DADOS DOS GRÁFICOS - Faturamento por Mês (últimos 5 meses)
+    # 3. DADOS DOS GRÁFICOS DE MESES
     grafico_meses = []
     grafico_faturamento = []
     grafico_pedidos_qtd = []
     
-    for i in range(4, -1, -1):  # Últimos 5 meses
-        mes_data = datetime.now() - timedelta(days=30*i)
-        mes_inicio = mes_data.replace(day=1, hour=0, minute=0, second=0)
+    hoje = datetime.now()
+    for i in range(4, -1, -1):
+        ano_alvo = hoje.year
+        mes_alvo = hoje.month - i
+        while mes_alvo <= 0:
+            mes_alvo += 12
+            ano_alvo -= 1
+            
+        mes_inicio = datetime(ano_alvo, mes_alvo, 1, 0, 0, 0)
         
-        # Próximo mês
-        if mes_data.month == 12:
-            mes_fim = mes_data.replace(year=mes_data.year+1, month=1, day=1, hour=0, minute=0, second=0) - timedelta(seconds=1)
+        if mes_alvo == 12:
+            mes_fim = datetime(ano_alvo + 1, 1, 1, 0, 0, 0) - timedelta(seconds=1)
         else:
-            mes_fim = mes_data.replace(month=mes_data.month+1, day=1, hour=0, minute=0, second=0) - timedelta(seconds=1)
+            mes_fim = datetime(ano_alvo, mes_alvo + 1, 1, 0, 0, 0) - timedelta(seconds=1)
         
-        # Query para o mês
-        faturamento_mes = db.session.query(
-            func.sum(Orders.total_value)
-        ).filter(
-            Orders.created_at >= mes_inicio,
-            Orders.created_at <= mes_fim,
-            Orders.status != 'C'
+        faturamento_mes = db.session.query(func.sum(Orders.total_value)).filter(
+            Orders.created_at >= mes_inicio, Orders.created_at <= mes_fim, Orders.status != 'C'
         ).scalar() or 0
         
         pedidos_mes = db.session.query(func.count(Orders.id)).filter(
-            Orders.created_at >= mes_inicio,
-            Orders.created_at <= mes_fim,
+            Orders.created_at >= mes_inicio, Orders.created_at <= mes_fim, Orders.status != 'C'
+        ).scalar() or 0
+        
+        grafico_meses.append(mes_inicio.strftime("%b"))
+        grafico_faturamento.append(float(faturamento_mes))
+        grafico_pedidos_qtd.append(pedidos_mes)
+
+    # 3.1 DADOS DOS DIAS
+    dias_labels = []
+    dias_valores = []
+    for i in range(6, -1, -1):
+        dia_alvo = hoje - timedelta(days=i)
+        inicio_dia = dia_alvo.replace(hour=0, minute=0, second=0)
+        fim_dia = dia_alvo.replace(hour=23, minute=59, second=59)
+        
+        faturamento_dia = db.session.query(func.sum(Orders.total_value)).filter(
+            Orders.created_at >= inicio_dia,
+            Orders.created_at <= fim_dia,
             Orders.status != 'C'
         ).scalar() or 0
         
-        grafico_meses.append(mes_data.strftime("%b"))
-        grafico_faturamento.append(float(faturamento_mes))
-        grafico_pedidos_qtd.append(pedidos_mes)
+        dias_labels.append(dia_alvo.strftime("%d/%m"))
+        dias_valores.append(float(faturamento_dia))
+
+    # 3.2 DADOS DE HORÁRIOS (Correção sem quebra do strftime em bancos diferentes)
+    horarios_labels = [f"{h:02d}:00" for h in range(24)]
+    horarios_valores = [0.0] * 24
     
-    # 4. Dados dos Gráficos Donut (Fileira 3)
-    # Distribuição por Plataforma (entrega)
+    pedidos_hoje = db.session.query(Orders.created_at, Orders.total_value).filter(
+        Orders.created_at >= hoje.replace(hour=0, minute=0, second=0),
+        Orders.created_at <= hoje.replace(hour=23, minute=59, second=59),
+        Orders.status != 'C'
+    ).all()
+    
+    for pedido in pedidos_hoje:
+        if pedido.created_at:
+            hora = pedido.created_at.hour
+            if 0 <= hora < 24:
+                horarios_valores[hora] += float(pedido.total_value or 0)
+    
+    # 4. OTIMIZAÇÃO DE QUERIES
+    pedidos_por_plataforma = dict(db.session.query(Orders.delivery, func.count(Orders.id)).group_by(Orders.delivery).all())
     plataformas_labels = ["Balcão", "iFood", "WhatsApp"]
     plataformas_valores = [
-        db.session.query(func.count(Orders.id)).filter(Orders.delivery == 'balcao').scalar() or 0,
-        db.session.query(func.count(Orders.id)).filter(Orders.delivery == 'ifood').scalar() or 0,
-        db.session.query(func.count(Orders.id)).filter(Orders.delivery == 'whatsapp').scalar() or 0,
+        pedidos_por_plataforma.get('balcao', 0),
+        pedidos_por_plataforma.get('ifood', 0),
+        pedidos_por_plataforma.get('whatsapp', 0)
     ]
     
-    # Distribuição por Status
+    pedidos_por_status = dict(db.session.query(Orders.status, func.count(Orders.id)).group_by(Orders.status).all())
     origem_labels = ["Realizado", "Em Prep.", "Pronto", "Finalizado"]
     origem_valores = [
-        db.session.query(func.count(Orders.id)).filter(Orders.status == 'R').scalar() or 0,
-        db.session.query(func.count(Orders.id)).filter(Orders.status == 'EP').scalar() or 0,
-        db.session.query(func.count(Orders.id)).filter(Orders.status == 'PR').scalar() or 0,
-        db.session.query(func.count(Orders.id)).filter(Orders.status == 'F').scalar() or 0,
+        pedidos_por_status.get('R', 0),
+        pedidos_por_status.get('EP', 0),
+        pedidos_por_status.get('PR', 0),
+        pedidos_por_status.get('F', 0)
     ]
     
-    # Métodos de Pagamento (mock - será expandido)
+    entrega_labels = ["Balcão", "Delivery"]
+    entrega_valores = [
+        pedidos_por_plataforma.get('balcao', 0),
+        sum(pedidos_por_plataforma.get(k, 0) for k in ['ifood', 'whatsapp', 'delivery'] if k in pedidos_por_plataforma)
+    ]
+    
+    # LINHA CORRIGIDA DEFINITIVAMENTE:
     pagamento_labels = ["Dinheiro", "PIX", "Crédito", "Débito"]
     pagamento_valores = [25, 45, 20, 10]
     
-    # Entrega
-    entrega_labels = ["Balcão", "Delivery"]
-    entrega_valores = [
-        db.session.query(func.count(Orders.id)).filter(Orders.delivery.in_(['balcao'])).scalar() or 0,
-        db.session.query(func.count(Orders.id)).filter(Orders.delivery.in_(['ifood', 'whatsapp', 'delivery'])).scalar() or 0,
-    ]
-    
-    # 5. Gráficos de Categorias (mock - será expandido com relação Products)
     categorias_labels = ["Eletrônicos", "Roupas", "Alimentos", "Acessórios"]
     categorias_valores = [8500.00, 4200.00, 2730.50, 1200.00]
     
-    # 6. Envio de todas as variáveis para o Template HTML
     return render_template(
         'site/dashboard.html',
-        # Configurações do Filtro
         periodos=periodos,
         periodo_selecionado=periodo_selecionado,
-        
-        # Cartões de Métricas Principais
         faturamento=float(total_faturamento),
         total_pedidos=total_pedidos,
         ticket_medio=round(ticket_medio, 2),
         total_clientes=total_clientes,
         
-        # Dados dos Gráficos de Linha e Barra
+        # Injeção de variáveis de dias e horas
+        dias_labels=dias_labels,
+        dias_valores=dias_valores,
+        horarios_labels=horarios_labels,
+        horarios_valores=horarios_valores,
+        
         grafico_meses=grafico_meses,
         grafico_faturamento=grafico_faturamento,
         grafico_pedidos_qtd=grafico_pedidos_qtd,
         categorias_labels=categorias_labels,
         categorias_valores=categorias_valores,
-        
-        # Dados Obrigatórios dos Donuts
         plataformas_labels=plataformas_labels,
         plataformas_valores=plataformas_valores,
         origem_labels=origem_labels,

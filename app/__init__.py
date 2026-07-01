@@ -4,8 +4,8 @@ from app.extensions import flask_admin, db, security
 from flask_admin.menu import MenuLink
 from flask_wtf.csrf import CSRFProtect
 from flask_security import SQLAlchemyUserDatastore, hash_password
-from admin.usuarios import SecureAdminIndexView 
-from Blueprint import *
+from app.admin.usuarios import SecureAdminIndexView 
+from app.Blueprint import *
 import app.models as models
 
 # Objeto de proteção global

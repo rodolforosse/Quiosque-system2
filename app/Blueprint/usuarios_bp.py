@@ -2,7 +2,7 @@ import secrets
 from flask import Blueprint, render_template, redirect, url_for, flash
 from flask_security import hash_password
 from app.extensions import db, admin_required
-from forms import UserForm
+from app.forms import UserForm
 from app.models import (
   User, 
   Role

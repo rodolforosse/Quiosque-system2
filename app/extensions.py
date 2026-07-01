@@ -10,7 +10,7 @@ from flask_sqlalchemy import SQLAlchemy
 db = SQLAlchemy()
 
 # Instancia vazia e limpa para evitar qualquer importação circular
-admin = Admin(name='Painel', theme=Bootstrap4Theme(swatch='flatly'))
+flask_admin = Admin(name='Painel', theme=Bootstrap4Theme(swatch='flatly'))
 security = Security()
 
 # Seu novo decorator centralizado

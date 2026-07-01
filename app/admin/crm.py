@@ -1,8 +1,6 @@
 # crm/admin.py
-from extensions import admin as flask_admin, db
-from admin.usuarios import SecureModelView
-from models import Customers, Employees, Suppliers
-
+from .usuarios import SecureModelView
+from app.models import Customers, Employees, Suppliers
 
 class CustomersAdminView(SecureModelView):
     """
@@ -46,6 +44,9 @@ class CustomersAdminView(SecureModelView):
         ]
     }
 
+    def __init__(self, session, **kwargs):
+        super(CustomersAdminView, self).__init__(Customers, session, **kwargs)
+
 
 class EmployeesAdminView(SecureModelView):
     """
@@ -86,6 +87,8 @@ class EmployeesAdminView(SecureModelView):
         'data_contratacao', 'data_demissao', 'salario'
     ]
 
+    def __init__(self, session, **kwargs):
+        super(EmployeesAdminView, self).__init__(Employees, session, **kwargs)
 
 class SuppliersAdminView(SecureModelView):
     """
@@ -119,8 +122,5 @@ class SuppliersAdminView(SecureModelView):
     # 4. Formulário de Edição
     form_columns = ['nome', 'contato', 'telefone', 'email', 'endereco']
 
-
-# Registra as views de admin
-flask_admin.add_view(CustomersAdminView(Customers, db.session, name="Clientes", category="CRM"))
-flask_admin.add_view(EmployeesAdminView(Employees, db.session, name="Funcionários", category="CRM"))
-flask_admin.add_view(SuppliersAdminView(Suppliers, db.session, name="Fornecedores", category="CRM"))
+    def __init__(self, session, **kwargs):
+        super(SuppliersAdminView, self).__init__(Suppliers, session, **kwargs)

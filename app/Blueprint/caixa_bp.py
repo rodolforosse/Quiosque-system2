@@ -1,8 +1,7 @@
-# Caixa/__init__.py
+# Caixa
 from flask import Blueprint, render_template
-from extensions import admin as flask_admin, db, admin_required
-# from Caixa.admin import CaixaAdminView, MovimentacaoCaixaAdminView
-from models import Caixa, MovimentacaoCaixa
+from app.extensions import admin_required
+from app.models import Caixadb, MovimentacaoCaixa
 
 # Cria o blueprint de Caixa
 caixa_bp = Blueprint('caixa', __name__)
@@ -17,7 +16,7 @@ caixa_bp.menu_items = [
     }
 ]
 
-# 1. ROTA: Painel de Caixa (ex: http://127.0.0.1/caixa)
+# 1. ROTA: Painel de Caixa
 @caixa_bp.route('/caixa')
 @admin_required()
 def create_view():
@@ -28,7 +27,7 @@ def create_view():
     - Opções de operações (venda, devolução, etc)
     """
     # Busca o caixa aberto
-    caixa_atual = Caixa.query.filter_by(status='aberto').order_by(Caixa.data_abertura.desc()).first()
+    caixa_atual = Caixadb.query.filter_by(status='aberto').order_by(Caixadb.data_abertura.desc()).first()
     
     # Se houver caixa aberto, calcula dados em tempo real
     dados_caixa = {}
@@ -44,7 +43,3 @@ def create_view():
         }
     
     return render_template('site/caixa.html', caixa=dados_caixa)
-
-# Registra as views de admin
-# flask_admin.add_view(CaixaAdminView(Caixa, db.session, name="Caixas", category="Financeiro"))
-# flask_admin.add_view(MovimentacaoCaixaAdminView(MovimentacaoCaixa, db.session, name="Movimentações", category="Financeiro"))

@@ -1,0 +1,315 @@
+{% extends 'base.html' %}
+
+{% block title %}Profile - {{ current_user.username }}{% endblock %}
+
+{% block header_title %}Profile{% endblock %}
+
+{% block content %}
+
+<div class="container-fluid bg-light py-4">
+    
+  <div class="row g-4">
+      
+      <!-- 1. COLUNA ESQUERDA: PONTO, RELÓGIO E FAVORITOS (Menor - 4 colunas) -->
+      <div class="col-12 col-lg-4">
+          
+          <!-- A: BOTÃO PRINCIPAL DE REGISTRO -->
+          <button type="button" class="btn btn-primary bg-gradient w-100 py-2.5 fw-bold shadow-sm border-0 fs-7 mb-3 d-flex align-items-center justify-content-center gap-2" onclick="registrarPonto()">
+              <i class="fas fa-fingerprint fs-5"></i> Efetuar Marcação
+          </button>
+
+          <!-- B: CAIXA UNIFICADA (Relógio Clean + Última Marcação) -->
+          <div class="bg-white p-3 rounded-3 shadow-sm border mb-3">
+              <!-- Relógio Digital Discreto -->
+              <div class="text-center py-2 bg-light rounded-3 border mb-3">
+                  <span class="text-uppercase text-muted fw-bold tracking-wider fs-8 d-block mb-1">Hora do Servidor</span>
+                  <div id="hora-servidor" class="fs-2 fw-bold font-monospace text-dark lh-1">--:--:--</div>
+              </div>
+
+              <!-- Componente Dropdown do Bootstrap 5 -->
+              <div class="dropdown">
+                  <!-- Gatilho que abre as marcações do dia -->
+                  <div class="d-flex align-items-center justify-content-between p-2 rounded-3 bg-light border border-dashed text-start" 
+                       id="dropdownMarcacoesDia"
+                       data-bs-toggle="dropdown" 
+                       data-bs-auto-close="true"
+                       aria-expanded="false"
+                       style="cursor: pointer;" 
+                       title="Clique para ver as marcações do dia">
+                      <div>
+                          <span class="text-muted fs-8 d-block mb-0.5">Última marcação:</span>
+                          <strong class="text-secondary fs-7">
+                              <i class="fas fa-history text-primary me-1 small"></i>
+                              {{ profile_info.ultimo_registro.strftime('%d/%m') }} às {{ profile_info.ultimo_registro.strftime('%H:%M') }}
+                          </strong>
+                      </div>
+                      <i class="fas fa-chevron-right text-primary small fs-7"></i>
+                  </div>
+
+                  <!-- PAINEL SUSPENSO (Dropdown Menu Personalizado) -->
+                  <div class="dropdown-menu p-3 shadow-lg border rounded-3 dropdown-menu-end w-100 mt-1 fs-7" 
+                       aria-labelledby="dropdownMarcacoesDia" 
+                       style="max-height: 280px; overflow-y: auto; z-index: 1050;">
+                      
+                      <h6 class="fw-bold text-dark mb-2 pb-1 border-bottom d-flex align-items-center justify-content-between">
+                          <span><i class="fas fa-list-ul text-secondary me-1"></i> Marcações de Hoje</span>
+                          <span class="badge bg-light text-muted fw-normal fs-8">              
+                            {{ profile_info.ultimo_registro.strftime('%d/%m') }} -
+                            {{ profile_info.ultimo_registro.strftime('%H:%M') }}
+                          </span>
+                      </h6>
+                      
+                      <!-- Lista de Registros do Dia -->
+                      <div class="d-flex flex-column gap-2 mt-2">
+                          {% if marcacoes_hoje %}
+                              {% for marcacao in marcacoes_hoje %}
+                                  <div class="d-flex align-items-center justify-content-between bg-light p-2 rounded border-start border-primary border-3">
+                                      <span class="text-secondary fw-medium">{{ forloop.counter }}ª Batida</span>
+                                      <strong class="text-dark font-monospace">{{ marcacao.strftime('%H:%M:%S') }}</strong>
+                                  </div>
+                              {% endfor %}
+                          {% else %}
+                              <!-- Exemplos visuais caso não existam dados no array -->
+                              <div class="d-flex align-items-center justify-content-between bg-light p-2 rounded border-start border-success border-3">
+                                  <span class="text-secondary fw-medium">Entrada</span>
+                                  <strong class="text-dark font-monospace">08:02:14</strong>
+                              </div>
+                              <div class="d-flex align-items-center justify-content-between bg-light p-2 rounded border-start border-warning border-3">
+                                  <span class="text-secondary fw-medium">Saída Intervalo</span>
+                                  <strong class="text-dark font-monospace">12:05:32</strong>
+                              </div>
+                          {% endif %}
+                      </div>
+                  </div>
+              </div>
+          </div>
+
+          <!-- C: MENU DE ACESSO (Favoritos) -->
+          <div class="bg-white p-3 rounded-3 shadow-sm border mb-4">
+              <h6 class="text-uppercase text-muted fw-bold tracking-wider mb-2 fs-8 border-bottom pb-1">Menu de Acesso</h6>
+              <div class="list-group list-group-flush">
+                <a href="{{ url_for('.espelho_colaborador') }}" class="list-group-item list-group-item-action d-flex align-items-center justify-content-between border-0 px-0 py-2 text-secondary transition-link fs-7">
+                      <div class="d-flex align-items-center gap-2">
+                          <div class="bg-primary-subtle text-primary rounded p-1.5 d-flex align-items-center justify-content-center" style="width: 28px; height: 28px;">
+                              <i class="fas fa-calendar-alt small"></i>
+                          </div>
+                          <span class="fw-semibold">Folha de Ponto</span>
+                      </div>
+                      <i class="fas fa-chevron-right text-muted fs-8"></i>
+                  </a>
+                  <a href="/config/painel/escala/" class="list-group-item list-group-item-action d-flex align-items-center justify-content-between border-0 px-0 py-2 text-secondary transition-link fs-7">
+                      <div class="d-flex align-items-center gap-2">
+                          <div class="bg-success-subtle text-success rounded p-1.5 d-flex align-items-center justify-content-center" style="width: 28px; height: 28px;">
+                              <i class="fas fa-clock small"></i>
+                          </div>
+                          <span class="fw-semibold">Escala de Trabalho</span>
+                      </div>
+                      <i class="fas fa-chevron-right text-muted fs-8"></i>
+                  </a>
+              </div>
+          </div>
+
+      </div>
+
+      <!-- 2. COLUNA DIREITA: INFORMATIVOS E ALERTAS (Maior - 8 colunas) -->
+      <div class="col-12 col-lg-8">
+          <div id="pop-up" style="display: none;" class="alert alert-info shadow-sm mb-3" role="alert"></div>
+          
+          <div class="bg-white p-4 rounded-3 shadow-sm border h-100">
+              <div class="d-flex align-items-center justify-content-between border-bottom pb-3 mb-4">
+                  <h5 class="fw-bold text-dark mb-0">Mural de Informativos</h5>
+                  <span class="badge bg-light text-secondary border px-2.5 py-1.5 rounded fs-8 fw-medium">Atualizado recente</span>
+              </div>
+              
+              <div id="alert-container">
+                  {% if messages %}
+                      {% for message in messages %}
+                          <div class="alert alert-{% if message.tags == 'error' %}danger{% elif message.tags == 'success' %}success{% else %}warning{% endif %} alert-dismissible fade show shadow-sm border-0 border-start border-4 border-{% if message.tags == 'error' %}danger{% elif message.tags == 'success' %}success{% else %}warning{% endif %} rounded-3 bg-light mb-3" role="alert">
+                              <div class="d-flex align-items-center gap-3">
+                                  <div class="rounded-circle p-2 bg-white d-flex align-items-center justify-content-center" style="width: 35px; height: 35px;">
+                                      {% if message.tags == 'success' %}
+                                          <i class="fas fa-check-circle text-success fs-5"></i>
+                                      {% elif message.tags == 'error' %}
+                                          <i class="fas fa-exclamation-circle text-danger fs-5"></i>
+                                      {% else %}
+                                          <i class="fas fa-exclamation-triangle text-warning fs-5"></i>
+                                      {% endif %}
+                                  </div>
+                                  <div class="text-dark fw-medium small">{{ message }}</div>
+                              </div>
+                              <button type="button" class="btn-close shadow-none" data-bs-dismiss="alert" aria-label="Close"></button>
+                          </div>
+                      {% endfor %}
+                  {% else %}
+                      <!-- Layout amigável quando não houver avisos no banco -->
+                      <div class="text-center py-5 my-4">
+                          <div class="bg-light rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3" style="width: 60px; height: 60px;">
+                              <i class="fas fa-bell-slash text-muted opacity-50 fs-4"></i>
+                          </div>
+                          <p class="text-muted fw-medium mb-1">Tudo limpo por aqui!</p>
+                          <p class="text-muted opacity-75 small">Nenhum aviso importante ou mensagem pendente.</p>
+                      </div>
+                  {% endif %}
+              </div>
+          </div>
+      </div>
+
+  <!-- Modal de Captura de Ponto por Câmera -->
+  <div class="modal fade" id="modal-camera" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 450px;">
+        <div class="modal-content rounded-3 shadow border-0">
+
+            <div class="modal-header bg-light border-0 py-3">
+                <h6 class="modal-title fw-bold text-dark mx-auto d-flex align-items-center gap-2">
+                    <i class="fas fa-camera text-primary"></i> Reconhecimento Facial
+                </h6>
+            </div>
+
+            <div class="modal-body p-4 text-center">
+                <!-- Container de Exibição Dinâmica -->
+                <div class="position-relative bg-dark rounded-3 overflow-hidden shadow-sm mx-auto mb-3 d-flex align-items-center justify-content-center" style="width: 320px; height: 240px;">
+
+                    <!-- Elemento da Câmera -->
+                    <video id="video-webcam" autoplay playsinline class="w-100 h-100 object-fit-cover"></video>
+
+                    <!-- TELA DE SUCESSO CORRIGIDA (Inicia com display none inline para evitar conflito com d-flex) -->
+                    <div id="sucesso-ponto" class="position-absolute w-100 h-100 top-0 start-0 bg-white align-items-center justify-content-center flex-column" style="display: none; z-index: 10;">
+                        <!-- Círculo Verde com Ícone Interno Corrigido -->
+                        <div class="rounded-circle bg-success text-white d-flex align-items-center justify-content-center shadow-sm" style="width: 80px; height: 80px;">
+                            <i class="fas fa-check fa-2x"></i> <!-- Adicionado fa-2x para garantir o tamanho correto do ícone -->
+                        </div>
+                        <h5 class="fw-bold text-success mt-3 mb-1">Ponto Registrado!</h5>
+                        <p class="text-muted small mb-0">Comprovante gerado com sucesso.</p>
+                    </div>
+                </div>
+
+                <!-- Contador Regressivo / Status -->
+                <div class="py-2">
+                    <div id="texto-status" class="text-muted small mb-1 fw-medium text-uppercase tracking-wider">Aguarde a captura...</div>
+                    <div id="contador-regressivo" class="display-3 fw-bold text-primary font-monospace lh-1">3</div>
+                </div>
+            </div>
+
+            <div class="modal-footer border-0 pt-0 pb-3 justify-content-center">
+                <button type="button" class="btn btn-light btn-sm px-4 border text-muted" onclick="cancelarCaptura()">Cancelar</button>
+            </div>
+
+        </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  /* Ajustes finos de tipografia e espaçamentos */
+  .fs-7 { font-size: 0.88rem !important; }
+  .fs-8 { font-size: 0.78rem !important; }
+  .tracking-wider { letter-spacing: 0.05em; }
+  .bg-primary-subtle { background-color: rgba(13, 110, 253, 0.08); }
+  .bg-success-subtle { background-color: rgba(25, 135, 84, 0.08); }
+  .border-dashed { border-style: dashed !important; }
+  
+  /* Efeito hover suave nos tópicos do menu */
+  .transition-link { transition: all 0.15s ease-in-out; }
+  .transition-link:hover { padding-left: 6px !important; background-color: var(--bs-light) !important; border-radius: 4px; }
+  
+  /* Animação do status Online */
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+  .animate-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+</style>
+{% endblock %}
+{% block extra_js %}
+  <script>
+    let streamWebcam = null; // Guarda a referência da câmera para poder desligar depois
+    let intervaloContador = null;
+
+    function registrarPonto() {
+        const modalElemento = document.getElementById('modal-camera');
+        const meuModal = new bootstrap.Modal(modalElemento);
+
+        // 1. Garante que o vídeo apareça e a tela de sucesso comece ESCONDIDA
+        document.getElementById('video-webcam').style.display = 'block';
+        document.getElementById('sucesso-ponto').style.setProperty('display', 'none', 'important');
+
+        // Reseta textos e contador
+        document.getElementById('contador-regressivo').classList.remove('d-none');
+        document.getElementById('contador-regressivo').textContent = "3";
+        document.getElementById('texto-status').textContent = "Aguarde a captura...";
+    
+        meuModal.show();
+    
+        // Ativa a câmera
+        navigator.mediaDevices.getUserMedia({ video: { width: 320, height: 240 } })
+            .then(function(stream) {
+                streamWebcam = stream;
+                const video = document.getElementById('video-webcam');
+                video.srcObject = stream;
+                iniciarContagem(meuModal);
+            })
+            .catch(function(err) {
+                console.error("Erro ao acessar a câmera: ", err);
+                document.getElementById('texto-status').textContent = "Erro: Câmera não encontrada.";
+                document.getElementById('contador-regressivo').textContent = "⚠️";
+            });
+    }
+
+    function iniciarContagem(instanciaModal) {
+        let tempoRestante = 3;
+        const elementoContador = document.getElementById('contador-regressivo');
+
+        document.getElementById('texto-status').textContent = "Olhe para a câmera";
+    
+        intervaloContador = setInterval(() => {
+            tempoRestante--;
+
+            if (tempoRestante > 0) {
+                elementoContador.textContent = tempoRestante;
+            } else {
+                clearInterval(intervaloContador);
+                finalizarRegistroPonto(instanciaModal);
+            }
+        }, 1000);
+    }
+
+    function finalizarRegistroPonto(instanciaModal) {
+        // Esconde o número do contador inferior
+        document.getElementById('contador-regressivo').classList.add('d-none');
+        document.getElementById('texto-status').textContent = "Processando...";
+    
+        // Desliga a transmissão da câmera
+        desligarCamera();
+    
+        // SOLUÇÃO DO BUG: Oculta o elemento <video> por completo para ele parar de gerar a tela preta
+        document.getElementById('video-webcam').style.display = 'none';
+        
+        // Exibe a tela branca de sucesso com o sinal verde de OK
+        const telaSucesso = document.getElementById('sucesso-ponto');
+        telaSucesso.style.setProperty('display', 'flex', 'important');
+        
+        // Aguarda o tempo visual e fecha o modal
+        setTimeout(() => {
+            instanciaModal.hide();
+            // Opcional: Recarrega a página se quiser atualizar a lista de batidas na tela:
+            // window.location.reload();
+        }, 1500);
+    }
+
+    function desligarCamera() {
+        if (streamWebcam) {
+            streamWebcam.getTracks().forEach(track => track.stop());
+            streamWebcam = null;
+        }
+        if (intervaloContador) {
+            clearInterval(intervaloContador);
+        }
+    }
+
+    function cancelarCaptura() {
+        desligarCamera();
+        const modalElemento = document.getElementById('modal-camera');
+        const modalInstance = bootstrap.Modal.getInstance(modalElemento);
+        if (modalInstance) {
+            modalInstance.hide();
+        }
+    }
+  </script>
+{% endblock %}

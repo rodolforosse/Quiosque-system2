@@ -1,0 +1,36 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: <-- Nome do namespace -->
+---  
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: <-- Nome do Deployment -->
+  namespace: <-- Namespace do serviço -->
+  labels: 
+    app: <-- Nome do app (pode ser o mesmo do Deployment) -->
+spec: 
+  replicas: 1
+  selector:
+    matchLabels:
+      app: <-- Nome do Node -->
+  template:
+    metadata:
+      labels:
+        app: <-- Nome do Node -->
+    spec:
+      serviceAccountName: <-- Conta de serviço -->
+      containers:
+      - name: <-- Conta do container -->
+        image: <-- caminho da imagem -->
+        ports:
+          - containerPort: 5000
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: <-- Nome da conta de serviço -->
+  namespace: <-- Namespace do serviço -->
+  annotations:
+     eks.amazonaws.com/role-arn: <-- caminho da role -->

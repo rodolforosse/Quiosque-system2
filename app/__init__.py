@@ -1,12 +1,12 @@
 import secrets
 from flask import Flask
-from extensions import admin, db, security
+from app.extensions import flask_admin, db, security
 from flask_admin.menu import MenuLink
 from flask_wtf.csrf import CSRFProtect
 from flask_security import SQLAlchemyUserDatastore, hash_password
 from admin.usuarios import SecureAdminIndexView 
 from Blueprint import *
-import models
+import app.models as models
 
 # Objeto de proteção global
 csrf = CSRFProtect()
@@ -32,9 +32,9 @@ def create_app():
     # Inicializa a proteção CSRF no aplicativo
     csrf.init_app(app)
     
-    admin.init_app(app, index_view=SecureAdminIndexView())
+    flask_admin.init_app(app, index_view=SecureAdminIndexView())
 
-    admin.add_link(MenuLink(name='Sair', endpoint='security.logout', category=''))
+    flask_admin.add_link(MenuLink(name='Sair', endpoint='security.logout', category=''))
     
     user_datastore = SQLAlchemyUserDatastore(db, models.User, models.Role)
     security.init_app(app, user_datastore)
@@ -45,6 +45,7 @@ def create_app():
     app.register_blueprint(dashboard_bp)
     app.register_blueprint(pedidos_bp)
     app.register_blueprint(produtos_bp)
+    app.register_blueprint(profile_bp)
     app.register_blueprint(usuarios_bp)
     app.register_blueprint(crm_bp)
 

@@ -1,6 +1,8 @@
 # Caixa
-from flask import Blueprint, render_template, jsonify
-from app.extensions import admin_required
+from flask import Blueprint, render_template, jsonify, request, redirect, url_for, flash
+from flask_login import current_user
+from decimal import Decimal
+from app.extensions import admin_required, db
 from app.models import Caixadb, MovimentacaoCaixa
 
 # Cria o blueprint de Caixa
@@ -17,7 +19,7 @@ caixa_bp.menu_items = [
 ]
 
 # 1. ROTA: Painel de Caixa
-@caixa_bp.route('/caixa')
+@caixa_bp.route('/caixa', methods=['GET', 'POST'])
 @admin_required()
 def create_view():
     """
@@ -25,8 +27,38 @@ def create_view():
     - Caixa aberto atual
     - Resumo de movimentações
     - Opções de operações (venda, devolução, etc)
+    Suporta POST para abrir o caixa via formulário (campo 'saldo_inicial').
     """
-    # Busca o caixa aberto
+    # Se for um POST vindo do formulário de abertura de caixa, processa a requisição
+    if request.method == 'POST':
+        # Apenas um tratamento simples: cria um novo caixa se não existir caixa aberto
+        saldo_raw = request.form.get('saldo_inicial', '').strip()
+        try:
+            # Normaliza formato como "R$ 45,60" ou "45,60"
+            saldo_norm = saldo_raw.replace('R$', '').replace('r$', '').replace('.', '').replace(',', '.')
+            valor_inicial = Decimal(saldo_norm) if saldo_norm else Decimal('0.00')
+        except Exception:
+            valor_inicial = Decimal('0.00')
+
+        # Só cria se realmente não houver caixa aberto
+        existing = Caixadb.query.filter_by(status='aberto').order_by(Caixadb.data_abertura.desc()).first()
+        if existing:
+            flash('Já existe um caixa aberto. Feche-o antes de abrir outro.', 'warning')
+            return redirect(url_for('caixa.create_view'))
+
+        # Garante que há um usuário autenticado (admin_required garante isso)
+        try:
+            novo_caixa = Caixadb(status='aberto', valor_inicial=valor_inicial, user_abertura_id=current_user.id)
+            db.session.add(novo_caixa)
+            db.session.commit()
+            flash('Caixa aberto com sucesso.', 'success')
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Erro ao abrir o caixa: {str(e)}', 'danger')
+
+        return redirect(url_for('caixa.create_view'))
+
+    # GET: busca o caixa aberto
     caixa_atual = Caixadb.query.filter_by(status='aberto').order_by(Caixadb.data_abertura.desc()).first()
     
     # Se houver caixa aberto, calcula dados em tempo real

@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alfajobs - Caixa</title>
+   <style>
+        /* Reset de Estilos Base */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Arial, sans-serif;
+        }
+
+        body {
+            background-color: #f8f9fa;
+            color: #333;
+            overflow-x: hidden;
+        }
+
+        /* Topbar / Cabeçalho Superior */
+        .topbar {
+            background-color: #ffffff;
+            border-bottom: 1px solid #e0e0e0;
+            padding: 12px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo-area {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .menu-icon {
+            font-size: 20px;
+            cursor: pointer;
+            color: #555;
+        }
+
+        .logo-text {
+            font-size: 22px;
+            font-weight: bold;
+            color: #0d47a1;
+        }
+
+        .user-status-area {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            font-size: 14px;
+        }
+
+        .status-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background-color: #2ecc71;
+            border-radius: 50%;
+            margin-right: 5px;
+        }
+
+        .ifood-badge {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .ifood-logo {
+            width: 20px;
+            height: 20px;
+            background-color: #ef4343;
+            color: white;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: bold;
+        }
+
+        /* Container de Conteúdo */
+        .container {
+            padding: 24px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .caixa-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .badge-aberto {
+            background-color: #e8f8f5;
+            color: #2ecc71;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: bold;
+            border: 1px solid #d4efdf;
+        }
+
+        .timestamp {
+            color: #7f8c8d;
+            font-size: 13px;
+        }
+
+        /* Barra de Ações */
+        .actions-bar {
+            display: flex;
+            gap: 25px;
+            margin-bottom: 25px;
+            font-size: 14px;
+        }
+
+        .btn-fechar {
+            color: #e74c3c;
+            text-decoration: none;
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        .btn-adicionar {
+            color: #3498db;
+            text-decoration: none;
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        /* Grid do Dashboard */
+        .content-grid {
+            display: grid;
+            grid-template-columns: 1fr 340px;
+            gap: 30px;
+        }
+
+        @media (max-width: 900px) {
+            .content-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Estrutura da Tabela */
+        .table-container {
+            background-color: #ffffff;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+
+        .fluxo-table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 14px;
+        }
+
+        .fluxo-table th {
+            color: #2c3e50;
+            font-weight: 600;
+            padding: 14px 12px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .fluxo-table td {
+            padding: 16px 12px;
+            border-bottom: 1px solid #f1f2f6;
+            color: #333;
+        }
+
+        .txt-verde { color: #2ecc71; font-weight: 500; }
+        .txt-cinza { color: #7f8c8d; }
+
+        /* Card Lateral de Relatório */
+        .relatorio-card {
+            background-color: #ffffff;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            padding: 24px;
+            font-size: 14px;
+            height: fit-content;
+        }
+
+        .relatorio-card h3 {
+            text-align: center;
+            font-size: 14px;
+            color: #2c3e50;
+            margin-bottom: 25px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .relatorio-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 16px;
+            color: #2c3e50;
+        }
+
+        .relatorio-row.destaque {
+            font-weight: bold;
+        }
+
+        .relatorio-row.cancelado {
+            color: #e74c3c;
+        }
+
+        .divider {
+            border-top: 1px solid #e8e8e8;
+            margin: 16px 0;
+        }
+
+        .subtitulo-forma {
+            font-size: 13px;
+            color: #7f8c8d;
+            margin-bottom: 16px;
+            font-weight: 600;
+        }
+
+        /* ESTRUTURA DO MODAL */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: none; /* Controlado via JS */
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+
+        .modal-content {
+            background-color: #ffffff;
+            width: 100%;
+            max-width: 600px;
+            border-radius: 4px;
+            padding: 32px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            animation: fadeIn 0.2s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .modal-title {
+            font-size: 18px;
+            font-weight: 500;
+            color: #2c3e50;
+            margin-bottom: 24px;
+        }
+
+        .input-group {
+            margin-bottom: 24px;
+        }
+
+        .input-label {
+            font-size: 14px;
+            color: #2c3e50;
+            margin-bottom: 12px;
+            display: block;
+            font-weight: 500;
+        }
+
+        /* Seletores de Tipo (Radio) */
+        .radio-option {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+            color: #555;
+            margin-bottom: 10px;
+            cursor: pointer;
+        }
+
+        .radio-option input {
+            cursor: pointer;
+            width: 16px;
+            height: 16px;
+        }
+
+        /* Inputs Estilo Linha Flutuante */
+        .line-input {
+            width: 100%;
+            border: none;
+            border-bottom: 1px solid #ccc;
+            padding: 10px 0;
+            font-size: 14px;
+            outline: none;
+            color: #333;
+            background: transparent;
+        }
+
+        .line-input:focus {
+            border-bottom: 2px solid #2ecc71;
+        }
+
+        .line-input::placeholder {
+            color: #b2bec3;
+        }
+
+        /* Rodapé de Ações do Modal */
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 20px;
+            margin-top: 32px;
+        }
+
+        .btn-modal-cancelar {
+            background: none;
+            border: none;
+            color: #2c3e50;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            padding: 10px 15px;
+        }
+
+        .btn-modal-adicionar {
+            background-color: #2ecc71;
+            color: white;
+            border: none;
+            padding: 10px 28px;
+            font-size: 14px;
+            font-weight: bold;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .btn-modal-adicionar:hover {
+            background-color: #27ae60;
+        }
+		/* MODAL DE ABERTURA DE CAIXA (OCUPA A TELA INTEIRA LOGO AO CARREGAR) */
+		.modal-abertura-overlay {
+			position: fixed;
+			top: 0;
+			left: 0;
+			width: 100%;
+			height: 100%;
+			background-color: #f8f9fa; /* Fundo sólido igual ao da página */
+			display: flex;
+			justify-content: center;
+			align-items: center;
+			z-index: 10000; /* Fica por cima de absolutamente tudo */
+		}
+		
+		.modal-abertura-content {
+			background-color: #ffffff;
+			width: 100%;
+			max-width: 500px;
+			border-radius: 4px;
+			padding: 40px;
+			box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+			border: 1px solid #e0e0e0;
+		}
+		
+		.modal-abertura-title {
+			font-size: 20px;
+			font-weight: 500;
+			color: #2c3e50;
+			margin-bottom: 12px;
+		}
+		
+		.modal-abertura-subtitle {
+			font-size: 14px;
+			color: #7f8c8d;
+			margin-bottom: 30px;
+		}
+		
+		.btn-abrir-caixa {
+			background-color: #2ecc71;
+			color: white;
+			border: none;
+			width: 100%;
+			padding: 14px;
+			font-size: 15px;
+			font-weight: bold;
+			border-radius: 4px;
+			cursor: pointer;
+			margin-top: 30px;
+			transition: background 0.2s;
+		}
+		
+		.btn-abrir-caixa:hover {
+			background-color: #27ae60;
+		}
+		
+		/* Estado inicial da estrutura principal (Escondida) */
+		.container {
+			display: none;
+		}
+
+		/* ESTILOS DO MODAL DE ATENÇÃO (FECHAR CAIXA) */
+		.modal-fechar-overlay {
+			position: fixed;
+			top: 0;
+			left: 0;
+			width: 100%;
+			height: 100%;
+			background-color: rgba(0, 0, 0, 0.4); /* Fundo escurecido suave */
+			display: none; /* Controlado via JS */
+			justify-content: center;
+			align-items: center;
+			z-index: 10001; /* Fica acima da tabela e do modal de entrada/saída */
+		}
+		
+		.modal-fechar-content {
+			background-color: #ffffff;
+			width: 100%;
+			max-width: 320px; /* Tamanho compacto idêntico ao da imagem */
+			border-radius: 4px;
+			padding: 24px;
+			box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+			animation: popupFade 0.15s ease-out;
+		}
+		
+		@keyframes popupFade {
+			from { opacity: 0; transform: scale(0.96); }
+			to { opacity: 1; transform: scale(1); }
+		}
+		
+		.modal-fechar-title {
+			font-size: 18px;
+			font-weight: bold;
+			color: #2c3e50;
+			margin-bottom: 12px;
+		}
+		
+		.modal-fechar-text {
+			font-size: 14px;
+			color: #7f8c8d;
+			margin-bottom: 24px;
+		}
+		
+		/* Alinhamento dos botões de ação textuais */
+		.modal-fechar-footer {
+			display: flex;
+			justify-content: flex-end;
+			gap: 16px;
+		}
+		
+		.btn-fechar-action {
+			background: none;
+			border: none;
+			font-size: 14px;
+			font-weight: bold;
+			text-transform: uppercase;
+			cursor: pointer;
+			padding: 8px 12px;
+			letter-spacing: 0.5px;
+		}
+		
+		.btn-fechar-cancelar {
+			color: #7f8c8d;
+		}
+		
+		.btn-fechar-confirmar {
+			color: #0d47a1; /* Azul destacado igual à imagem */
+		}
+
+    </style>
+</head>
+<body>
+	<!-- Barra de Navegação Superior (Sempre Visível) -->
+	<header class="topbar">
+		<div class="logo-area">
+			<span class="menu-icon">☰</span>
+			<span class="logo-text">alfalabs</span>
+		</div>
+		<div class="user-status-area">
+			<div><span class="status-dot"></span>Aberto ⏷</div>
+			<div class="ifood-badge">
+				<span class="ifood-logo">if</span>
+				<span>FR SHOP ANHANGUERA CAJAMAR SP</span>
+			</div>
+			<div>👤 Caiza</div>
+		</div>
+	</header>
+	
+	<!-- VIEW 1: PAINEL DE CAIXA FECHADO (ABERTURA) -->
+	<div class="caixa-fechado-container" id="modalAbertura">
+		<div class="modal-abertura-content">
+			<h2 class="modal-abertura-title">Abrir caixa</h2>
+			<p class="modal-abertura-subtitle">Insira o saldo inicial para iniciar as movimentações do dia.</p>
+			
+			<div class="input-group">
+				<label class="input-label">Saldo inicial em dinheiro</label>
+				<input type="text" class="line-input" id="saldoInicialInput" placeholder="R$ 0,00" autocomplete="off">
+			</div>
+	
+			<button class="btn-abrir-caixa" id="btnAbrirCaixa" type="button">Abrir Caixa</button>
+		</div>
+	</div>
+	
+	
+	<!-- VIEW 2: CONTEÚDO PRINCIPAL (DASHBOARD DO CAIXA) -->
+	<main class="container" id="viewPrincipal" style="display: none;">
+		<div class="caixa-header">
+			<span class="badge-aberto">● Caixa Aberto</span>
+			<span class="timestamp" id="caixaTimestamp">às 12:31h 12/07 por Caixa</span>
+		</div>
+	
+		<div class="actions-bar">
+			<span class="btn-fechar" id="btnFecharCaixaGatilho">🛑 Fechar Caixa</span>
+			<span class="btn-adicionar" id="openModalBtn">＋ Adicionar Entrada / Saída</span>
+		</div>
+	
+		<div class="content-grid">
+			<!-- Tabela de Lançamentos -->
+			<div class="table-container">
+				<table class="fluxo-table">
+					<thead>
+						<tr>
+							<th>Data</th>
+							<th>Descrição</th>
+							<th>Entrada</th>
+							<th>Saída</th>
+							<th>Forma pagamento</th>
+						</tr>
+					</thead>
+					<tbody id="tabelaCorpo">
+						<tr>
+							<td>12:31h 12/07</td>
+							<td>Saldo inicial</td>
+							<td class="txt-verde" id="tabelaSaldoInicial">R$0,00</td>
+							<td>—</td>
+							<td>Dinheiro</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+	
+			<!-- Painel de Relatório Lateral -->
+			<aside class="relatorio-card">
+				<h3>Relatório de Caixa</h3>
+				<div class="relatorio-row"><span>Total entradas</span><span id="repEntradas">R$0,00</span></div>
+				<div class="relatorio-row"><span>Total saídas</span><span>R$0,00</span></div>
+				<div class="relatorio-row cancelado"><span>Total itens cancelados</span><span>R$0,00</span></div>
+				<div class="relatorio-row destaque"><span>Saldo inicial</span><span id="repInicial">R$0,00</span></div>
+				<div class="relatorio-row destaque"><span>Saldo final</span><span id="repFinal">R$0,00</span></div>
+				<div class="divider"></div>
+				<div class="subtitulo-forma">Forma</div>
+				<div class="relatorio-row"><span>Dinheiro</span><span id="repDinheiro">R$0,00</span></div>
+				<div class="relatorio-row destaque"><span>TOTAL</span><span id="repTotal">R$0,00</span></div>
+			</aside>
+		</div>
+	</main>
+	
+    <!-- JANELA INTERFACE DO MODAL -->
+	<div class="modal-overlay" id="modalEntradaSaida">
+		<div class="modal-content">
+			<h2 class="modal-title">Adicionar entrada ou saída</h2>
+			
+			<div class="input-group">
+				<label class="input-label">Escolha o tipo de operação:</label>
+				<label class="radio-option">
+					<input type="radio" name="tipo_operacao" checked> Entrada de dinheiro
+				</label>
+				<label class="radio-option">
+					<input type="radio" name="tipo_operacao"> Saída de dinheiro (sangria)
+				</label>
+			</div>
+	
+			<div class="input-group">
+				<input type="text" class="line-input" placeholder="Insira o valor">
+			</div>
+	
+			<div class="input-group">
+				<input type="text" class="line-input" placeholder="Observação">
+			</div>
+	
+			<div class="modal-footer">
+				<button class="btn-modal-cancelar" id="closeModalBtn">Cancelar</button>
+				<button class="btn-modal-adicionar" type="button">Adicionar</button>
+			</div>
+		</div>
+	</div>
+	
+	<!-- INTERFACE DO MODAL DE CONFIRMAÇÃO DE FECHAMENTO -->
+	<div class="modal-fechar-overlay" id="modalFecharCaixa">
+		<div class="modal-fechar-content">
+			<h3 class="modal-fechar-title">Atenção</h3>
+			<p class="modal-fechar-text">Deseja fechar o caixa?</p>
+			
+			<div class="modal-fechar-footer">
+				<button class="btn-fechar-action btn-fechar-cancelar" id="btnCancelarFechamento" type="button">Cancelar</button>
+				<button class="btn-fechar-action btn-fechar-confirmar" id="btnConfirmarFechamento" type="button">Confirmar</button>
+			</div>
+		</div>
+	</div>
+
+
+	<!-- Lógica JavaScript para Abertura e Fechamento Seguro -->
+	<script>
+		document.addEventListener("DOMContentLoaded", function () {
+			const modal = document.getElementById("modalEntradaSaida");
+			const btnOpen = document.getElementById("openModalBtn"); // ID que deve estar no seu botão "Adicionar Entrada/Saída"
+			const btnClose = document.getElementById("closeModalBtn");
+	
+			// Abre o modal ao clicar no botão disparador externo
+			if (btnOpen) {
+				btnOpen.addEventListener("click", function () {
+					modal.style.display = "flex";
+				});
+			}
+	
+			// Fecha o modal ao clicar no botão Cancelar interno
+			if (btnClose) {
+				btnClose.addEventListener("click", function () {
+					modal.style.display = "none";
+				});
+			}
+	
+			// Fecha o modal ao clicar fora da caixa branca (no fundo cinza)
+			if (modal) {
+				modal.addEventListener("click", function (e) {
+					if (e.target === modal) {
+						modal.style.display = "none";
+					}
+				});
+			}
+		});
+		
+		document.addEventListener("DOMContentLoaded", function () {
+			// Elementos do Modal de Abertura e View Principal
+			const modalAbertura = document.getElementById("modalAbertura");
+			const containerPrincipal = document.querySelector(".container");
+			const btnAbrirCaixa = document.getElementById("btnAbrirCaixa");
+			const saldoInicialInput = document.getElementById("saldoInicialInput");
+		
+			// Elementos do Modal de Entrada/Saída (da etapa anterior)
+			const modalEntradaSaida = document.getElementById("modalEntradaSaida");
+			const btnOpenMovimentacao = document.getElementById("openModalBtn");
+			const btnCloseMovimentacao = document.getElementById("closeModalBtn");
+		
+			// Regra de transição da tela de abertura para o conteúdo principal
+			if (btnAbrirCaixa) {
+				btnAbrirCaixa.addEventListener("click", function () {
+					const valorDigitado = saldoInicialInput.value.trim();
+		
+					if (valorDigitado !== "" && valorDigitado !== "0" && valorDigitado !== "0,00") {
+						// Esconde a tela de abertura
+						modalAbertura.style.display = "none";
+						// Mostra o container principal do sistema
+						containerPrincipal.style.display = "block";
+					} else {
+						alert("Por favor, lance um valor válido no saldo inicial para abrir o caixa.");
+						saldoInicialInput.focus();
+					}
+				});
+			}
+		
+			// Controle do outro modal (Adicionar Entrada/Saída)
+			if (btnOpenMovimentacao) {
+				btnOpenMovimentacao.addEventListener("click", function () {
+					modalEntradaSaida.style.display = "flex";
+				});
+			}
+		
+			if (btnCloseMovimentacao) {
+				btnCloseMovimentacao.addEventListener("click", function () {
+					modalEntradaSaida.style.display = "none";
+				});
+			}
+		
+			if (modalEntradaSaida) {
+				modalEntradaSaida.addEventListener("click", function (e) {
+					if (e.target === modalEntradaSaida) {
+						modalEntradaSaida.style.display = "none";
+					}
+				});
+			}
+		});
+
+		document.addEventListener("DOMContentLoaded", function () {
+			// Pegando as referências das telas e botões
+			const containerPrincipal = document.querySelector(".container");
+			const modalAbertura = document.getElementById("modalAbertura");
+			const saldoInicialInput = document.getElementById("saldoInicialInput");
+			
+			// Novos elementos do fechamento de caixa
+			const modalFecharCaixa = document.getElementById("modalFecharCaixa");
+			const btnFecharCaixaGatilho = document.querySelector(".btn-fechar"); // O botão "🖨️ Fechar Caixa" da barra de ações
+			const btnCancelarFechamento = document.getElementById("btnCancelarFechamento");
+			const btnConfirmarFechamento = document.getElementById("btnConfirmarFechamento");
+		
+			// 1. Ao clicar no link "Fechar Caixa", exibe o modal de atenção
+			if (btnFecharCaixaGatilho) {
+				btnFecharCaixaGatilho.addEventListener("click", function (e) {
+					e.preventDefault(); // Evita o comportamento padrão do link '#'
+					modalFecharCaixa.style.display = "flex";
+				});
+			}
+		
+			// 2. Se o usuário desistir e clicar em Cancelar, esconde o modal de atenção
+			if (btnCancelarFechamento) {
+				btnCancelarFechamento.addEventListener("click", function () {
+					modalFecharCaixa.style.display = "none";
+				});
+			}
+		
+			// 3. Ao confirmar o fechamento: esconde a atenção, limpa os campos antigos, esconde a tela principal e volta para a tela de abertura
+			if (btnConfirmarFechamento) {
+				btnConfirmarFechamento.addEventListener("click", function () {
+					// Esconde o modal de atenção
+					modalFecharCaixa.style.display = "none";
+					
+					// Oculta a área de conteúdo do sistema ativo
+					containerPrincipal.style.display = "none";
+					
+					// Reseta o input de saldo inicial para uma nova abertura limpa
+					if (saldoInicialInput) {
+						saldoInicialInput.value = "";
+					}
+					
+					// Reexibe o modal inicial de abertura de caixa na tela inteira
+					if (modalAbertura) {
+						modalAbertura.style.display = "flex";
+					}
+				});
+			}
+		
+			// Fecha o modal caso cliquem fora da caixa de diálogo
+			if (modalFecharCaixa) {
+				modalFecharCaixa.addEventListener("click", function (e) {
+					if (e.target === modalFecharCaixa) {
+						modalFecharCaixa.style.display = "none";
+					}
+				});
+			}
+		});
+
+	</script>
+
+
+</body>
+</html>

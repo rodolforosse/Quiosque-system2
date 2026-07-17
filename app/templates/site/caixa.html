@@ -1,29 +1,78 @@
-{% extends 'base.html' %}
+{% extends 'base.html' %} 
 
-{% block title %}Caixa{% endblock %}
- 
+{% block title %}Caixa{% endblock %} 
+
 {% block content %}
   <div class="content bg-white h-100" style="max-width: 1000px; width: 100%;">
     <div class="card border-0 shadow-sm">
       <div class="card-body p-4">
-          
-          <!-- Alerta Dinâmico com Jinja2 (Muda a cor dependendo se o caixa está aberto ou fechado) -->
-          {% if caixa_aberto %}
-          <div class="d-flex align-items-center gap-2 p-2 rounded-2" style="background-color: #D1FAE5; color: #065F46; width: fit-content;">
+		{% if caixa and caixa.caixa_id is defined %}
+		<div class="d-flex gap-3 align-items-left mb-3">
+		  <div class="align-items-center gap-2 p-2 ps-4 pe-4" style="background-color: #D1FAE5; color: #065F46; width: fit-content;">
               <i class="fa-solid fa-circle" style="font-size: 0.6rem;"></i>
               <span class="fw-semibold small">Caixa Aberto</span>
           </div>
-          {% else %}
+		  <div class=""><span class="timestamp" id="caixaTimestamp">às 12:31h 12/07 por Caixa</span></div>
+		</div>
+		{% else %}
           <div class="d-flex align-items-center gap-2 p-2 rounded-2" style="background-color: #FEE2E2; color: #B91C1C; width: fit-content;">
               <i class="fa-solid fa-circle" style="font-size: 0.6rem;"></i>
               <span class="fw-semibold small">Caixa Fechado</span>
           </div>
-          {% endif %}
+		{% endif %}
+
+        <hr class="my-3 mx-2">
+
+		{% if caixa and caixa.caixa_id is defined %}
+		  <div class="actions-bar">
+			<span class="btn-fechar" id="btnFecharCaixaGatilho">🛑 Fechar Caixa</span>
+			<span class="btn-adicionar" id="openModalBtn">＋ Adicionar Entrada / Saída</span>
+		  </div>
+
+          <!-- Espaço para as movimentações e relatório lateral -->
+          <div class="row mt-4">
+            <div class="col-12 col-lg-8">
+              <div class="table-container">
+                <table class="fluxo-table" id="tabela-movimentacoes">
+                  <thead>
+                    <tr>
+                      <th>Data</th>
+                      <th>Descrição</th>
+                      <th class="text-end">Entrada</th>
+                      <th class="text-end">Saída</th>
+                      <th>Forma pagamento</th>
+                    </tr>
+                  </thead>
+                  <tbody id="tabela-movimentacoes-body">
+                    <tr>
+            		  <td>—</td>
+            		  <td>Saldo inicial registrado</td>
+            		  <td>R$ {{ "%.2f"|format(caixa.valor_inicial|float) }}</td>
+            		  <td>—</td>
+            		  <td>Dinheiro</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
         
-          <hr class="my-3 mx-2">
-        
-          <!-- Formulário Flask -->
-          <form name="formCaixa" method="POST" class="ng-pristine ng-valid">
+            <div class="col-12 col-lg-4">
+              <div id="relatorio-caixa" class="relatorio-card">
+                <h6 class="fw-bold text-muted text-uppercase small">Relatório de Caixa</h6>
+                <div id="relatorio-caixa-body" class="mt-2">
+                  <p>Vendas: R$ {{ "%.2f"|format(caixa.valor_vendas|float) }}</p>
+        		  <p>Devoluções: R$ {{ "%.2f"|format(caixa.valor_devolucoes|float) }}</p>
+        		  <p>Saldo Inicial: R$ {{ "%.2f"|format(caixa.valor_inicial|float) }}</p>
+        		  <p><strong>Saldo Atual em Caixa: R$ {{ "%.2f"|format(caixa.valor_atual|float) }}</strong></p>
+        		  <small>Total de registros identificados: {{ caixa.total_movimentacoes }}</small>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        {% else %}
+		  <!-- Formulário Flask -->
+          <form method="POST" action="{{ url_for('caixa.create_view') }}">
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               
               <div class="row align-items-end g-3">
@@ -44,170 +93,61 @@
                               ng-click="abrirCaixa(saldoInicial)" 
                               ng-class="{'loader': loading2 || loading}" 
                               ng-disabled="loading2 || loading"
-                              {% if caixa_aberto %}disabled{% endif %}> {# Desativa o botão se o caixa já estiver aberto #}
+                              {% if caixa_aberto %}disabled{% endif %}>
                           <span>Abrir Caixa</span>
                       </button>
                   </div>
-                
-                <!-- Botão para carregar movimentações -->
-                <div class="col-auto">
-                  <button id="btn-carregar-movimentacoes" type="button" class="btn btn-outline-primary px-3" {% if not caixa_aberto %}disabled{% endif %}>
-                    <i class="fas fa-list me-2"></i>Mostrar Movimentações
-                  </button>
-                </div>
-              
+                              
               </div>
           </form>
-
-          <!-- Espaço para as movimentações e relatório lateral -->
-          <div class="row mt-4">
-            <div class="col-12 col-lg-8">
-              <div id="caixa-movimentacoes-container" class="mt-1">
-                <div class="table-responsive">
-                  <table class="table table-borderless" id="tabela-movimentacoes">
-                    <thead>
-                      <tr>
-                        <th>Data</th>
-                        <th>Descrição</th>
-                        <th class="text-end">Entrada</th>
-                        <th class="text-end">Saída</th>
-                        <th>Forma pagamento</th>
-                      </tr>
-                    </thead>
-                    <tbody id="tabela-movimentacoes-body">
-                      <tr>
-                        <td colspan="5" class="text-center text-muted py-5">Clique em "Mostrar Movimentações" para carregar os dados do caixa.</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-
-            <div class="col-12 col-lg-4">
-              <div id="relatorio-caixa" class="card p-3">
-                <h6 class="fw-bold text-muted text-uppercase small">Relatório de Caixa</h6>
-                <div id="relatorio-caixa-body" class="mt-2">
-                  <p class="text-muted small">Totais serão exibidos aqui após carregar as movimentações.</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
+		{% endif %}
       </div>
     </div>
-  </div>
-{% endblock %}
-{% block extra_js %}
+  </div>		  
+{% endblock %} 
+
+{% block extra_js %} 
 <script>
-  (function () {
-    function formatMoneyBR(value) {
-      return 'R$ ' + value.toFixed(2).replace('.', ',');
-    }
-
-    function mapMetodoLabel(m) {
-      const mapa = {
-        'dinheiro': 'Dinheiro',
-        'pix': 'PIX',
-        'cartao_debito': 'Cartão de Débito',
-        'cartao_credito': 'Cartão de Crédito',
-        'cheque': 'Cheque'
-      };
-      return mapa[m] || (m ? String(m).replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase()) : 'Desconhecido');
-    }
-
-    async function carregarMovimentacoesCaixa() {
-      const btn = document.getElementById('btn-carregar-movimentacoes');
-      btn.disabled = true;
-      btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Carregando...';
-
-      try {
-        const resp = await fetch('/caixa/movimentacoes.json', { credentials: 'same-origin' });
-        if (!resp.ok) throw new Error('Resposta HTTP ' + resp.status);
-        const data = await resp.json();
-        if (!data.success) throw new Error(data.error || 'Erro ao obter movimentações');
-
-        const body = document.getElementById('tabela-movimentacoes-body');
-        body.innerHTML = '';
-
-        let totalEntradas = 0, totalSaidas = 0;
-        const porForma = {};
-
-        if (!data.movimentacoes || data.movimentacoes.length === 0) {
-          body.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-5">Nenhuma movimentação encontrada para este caixa.</td></tr>';
-        } else {
-          data.movimentacoes.forEach(m => {
-            const tr = document.createElement('tr');
-
-            const dt = new Date(m.date);
-            const hora = dt.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'});
-            const dataStr = hora + ' ' + dt.toLocaleDateString();
-
-            const entradaText = (m.entrada && m.entrada > 0) ? formatMoneyBR(Number(m.entrada)) : '-';
-            const saidaText = (m.saida && m.saida > 0) ? formatMoneyBR(Number(m.saida)) : '-';
-
-            tr.innerHTML = `
-              <td class="small">${dataStr}</td>
-              <td class="small">${m.description || ''}</td>
-              <td class="text-end small text-success">${entradaText}</td>
-              <td class="text-end small text-danger">${saidaText}</td>
-              <td class="small">${mapMetodoLabel(m.metodo_pagamento)}</td>
-            `;
-
-            body.appendChild(tr);
-
-            totalEntradas += Number(m.entrada || 0);
-            totalSaidas += Number(m.saida || 0);
-            const forma = m.metodo_pagamento || 'dinheiro';
-            porForma[forma] = (porForma[forma] || 0) + Number(m.entrada || 0) - Number(m.saida || 0);
-          });
-        }
-
-        // Atualiza painel lateral
-        const painel = document.getElementById('relatorio-caixa-body');
-        const saldoInicial = (typeof caixa !== 'undefined' && caixa.valor_inicial) ? Number(caixa.valor_inicial) : 0.0;
-        const saldoFinal = saldoInicial + totalEntradas - totalSaidas;
-
-        let formasHtml = '';
-        Object.keys(porForma).forEach(f => {
-          formasHtml += `<div class="d-flex justify-content-between"><small>${mapMetodoLabel(f)}</small><strong>${formatMoneyBR(porForma[f])}</strong></div>`;
+document.addEventListener('DOMContentLoaded', function () {
+    const btnCarregar = document.getElementById('btnCarregarMovimentacoes');
+    
+    if (btnCarregar) {
+        btnCarregar.addEventListener('click', function () {
+            // Executa a busca na API JSON configurada em seu Blueprint
+            fetch("{{ url_for('caixa.movimentacoes_json') }}")
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const tbody = document.querySelector('#tabelaMovimentacoes tbody');
+                        const msg = document.getElementById('msgCarregamento');
+                        
+                        // Resguarda apenas a linha inicial se ela existir
+                        while (tbody.rows.length > 1) {
+                            tbody.deleteRow(1);
+                        }
+                        
+                        // Insere sequencialmente as linhas obtidas da API
+                        data.movimentacoes.forEach(mov => {
+                            const row = tbody.insertRow();
+                            const dataFormatada = new Date(mov.date).toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'}) + 'h';
+                            
+                            row.innerHTML = `
+                                <td>${dataFormatada}</td>
+                                <td>${mov.description}</td>
+                                <td>${mov.entrada > 0 ? 'R$ ' + mov.entrada.toFixed(2) : '—'}</td>
+                                <td>${mov.saida > 0 ? 'R$ ' + mov.saida.toFixed(2) : '—'}</td>
+                                <td>${mov.metodo_pagamento || '—'}</td>
+                            `;
+                        });
+                        
+                        if(msg) msg.innerText = "Movimentações atualizadas.";
+                    } else {
+                        alert('Erro ao processar requisição: ' + data.error);
+                    }
+                })
+                .catch(error => console.error('Falha na comunicação AJAX:', error));
         });
-
-        painel.innerHTML = `
-          <div class="d-flex justify-content-between"><small>Total entradas</small><strong>${formatMoneyBR(totalEntradas)}</strong></div>
-          <div class="d-flex justify-content-between"><small>Total saídas</small><strong>${formatMoneyBR(totalSaidas)}</strong></div>
-          <div class="d-flex justify-content-between text-danger"><small>Total itens cancelados</small><strong>R$ 0,00</strong></div>
-          <hr>
-          <div class="d-flex justify-content-between"><small>Saldo inicial</small><strong>${formatMoneyBR(saldoInicial)}</strong></div>
-          <div class="d-flex justify-content-between"><small>Saldo final</small><strong>${formatMoneyBR(saldoFinal)}</strong></div>
-          <hr>
-          ${formasHtml || '<p class="text-muted small">Nenhuma forma de pagamento registrada.</p>'}
-          <hr>
-          <div class="d-flex justify-content-between"><strong>TOTAL</strong><strong>${formatMoneyBR(saldoFinal)}</strong></div>
-        `;
-
-      } catch (err) {
-        console.error('Erro ao carregar movimentos do caixa', err);
-        alert('Erro ao carregar movimentações do caixa: ' + err.message);
-      } finally {
-        btn.disabled = false;
-        btn.innerHTML = '<i class="fas fa-list me-2"></i>Mostrar Movimentações';
-      }
     }
-
-    document.addEventListener('DOMContentLoaded', function () {
-      const btn = document.getElementById('btn-carregar-movimentacoes');
-      if (btn) btn.addEventListener('click', carregarMovimentacoesCaixa);
-
-      // Opcional: carregar automaticamente ao abrir a página se houver caixa
-      const shouldAutoLoad = false; // ajuste se quiser auto-load
-      if (shouldAutoLoad && btn && !btn.disabled) {
-        btn.click();
-      }
-    });
-
-    // Expor função no escopo global para facilitar testes manuais
-    window.carregarMovimentacoesCaixa = carregarMovimentacoesCaixa;
-  })();
+});
 </script>
 {% endblock %}

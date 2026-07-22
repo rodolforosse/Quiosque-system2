@@ -25,7 +25,7 @@
 
 		{% if caixa and caixa.caixa_id is defined %}
 		  <div class="actions-bar">
-			<span class="btn-fechar" id="btnFecharCaixaGatilho">🛑 Fechar Caixa</span>
+			<span class="btn-fechar">🛑 Fechar Caixa</span>
 			<span class="btn-adicionar" id="openModalBtn">＋ Adicionar Entrada / Saída</span>
 		  </div>
 
@@ -90,10 +90,7 @@
                       <button class="btn btn-success px-4 d-flex align-items-center justify-content-center" 
                               type="submit" 
                               name="abrir_caixa" 
-                              ng-click="abrirCaixa(saldoInicial)" 
-                              ng-class="{'loader': loading2 || loading}" 
-                              ng-disabled="loading2 || loading"
-                              {% if caixa_aberto %}disabled{% endif %}>
+                              ng-click="abrirCaixa(saldoInicial)">
                           <span>Abrir Caixa</span>
                       </button>
                   </div>
@@ -103,51 +100,233 @@
 		{% endif %}
       </div>
     </div>
-  </div>		  
+  </div>
+
+  <!-- JANELA INTERFACE DO MODAL -->
+	<div class="modal-overlay" id="modalEntradaSaida">
+		<div class="modal-content">
+			<h2 class="modal-title">Adicionar entrada ou saída</h2>
+			
+			<div class="input-group">
+				<label class="input-label">Escolha o tipo de operação:</label>
+				<label class="radio-option">
+					<input type="radio" name="tipo_operacao" checked> Entrada de dinheiro
+				</label>
+				<label class="radio-option">
+					<input type="radio" name="tipo_operacao"> Saída de dinheiro (sangria)
+				</label>
+			</div>
+	
+			<div class="input-group">
+				<input type="text" class="line-input" placeholder="Insira o valor">
+			</div>
+	
+			<div class="input-group">
+				<input type="text" class="line-input" placeholder="Observação">
+			</div>
+	
+			<div class="modal-footer">
+				<button class="btn-modal-cancelar" id="closeModalBtn">Cancelar</button>
+				<button class="btn-modal-adicionar" type="button">Adicionar</button>
+			</div>
+		</div>
+	</div>
+	
+	<!-- INTERFACE DO MODAL DE CONFIRMAÇÃO DE FECHAMENTO -->
+	<div class="modal-fechar-overlay" id="modalFecharCaixa">
+		<div class="modal-fechar-content">
+			<h3 class="modal-fechar-title">Atenção</h3>
+			<p class="modal-fechar-text">Deseja fechar o caixa?</p>
+			
+			<div class="modal-fechar-footer">
+				<button class="btn-fechar-action btn-fechar-cancelar" id="btnCancelarFechamento" type="button">Cancelar</button>
+				<button class="btn-fechar-action btn-fechar-confirmar" id="btnConfirmarFechamento" type="button">Confirmar</button>
+			</div>
+		</div>
+	</div>	  
 {% endblock %} 
 
 {% block extra_js %} 
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-    const btnCarregar = document.getElementById('btnCarregarMovimentacoes');
-    
-    if (btnCarregar) {
-        btnCarregar.addEventListener('click', function () {
-            // Executa a busca na API JSON configurada em seu Blueprint
-            fetch("{{ url_for('caixa.movimentacoes_json') }}")
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        const tbody = document.querySelector('#tabelaMovimentacoes tbody');
-                        const msg = document.getElementById('msgCarregamento');
-                        
-                        // Resguarda apenas a linha inicial se ela existir
-                        while (tbody.rows.length > 1) {
-                            tbody.deleteRow(1);
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const btnCarregar = document.getElementById('btnCarregarMovimentacoes');
+
+        if (btnCarregar) {
+            btnCarregar.addEventListener('click', function () {
+                // Executa a busca na API JSON configurada em seu Blueprint
+                fetch("{{ url_for('caixa.movimentacoes_json') }}")
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            const tbody = document.querySelector('#tabelaMovimentacoes tbody');
+                            const msg = document.getElementById('msgCarregamento');
+
+                            // Resguarda apenas a linha inicial se ela existir
+                            while (tbody.rows.length > 1) {
+                                tbody.deleteRow(1);
+                            }
+
+                            // Insere sequencialmente as linhas obtidas da API
+                            data.movimentacoes.forEach(mov => {
+                                const row = tbody.insertRow();
+                                const dataFormatada = new Date(mov.date).toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'}) + 'h';
+
+                                row.innerHTML = `
+                                    <td>${dataFormatada}</td>
+                                    <td>${mov.description}</td>
+                                    <td>${mov.entrada > 0 ? 'R$ ' + mov.entrada.toFixed(2) : '—'}</td>
+                                    <td>${mov.saida > 0 ? 'R$ ' + mov.saida.toFixed(2) : '—'}</td>
+                                    <td>${mov.metodo_pagamento || '—'}</td>
+                                `;
+                            });
+
+                            if(msg) msg.innerText = "Movimentações atualizadas.";
+                        } else {
+                            alert('Erro ao processar requisição: ' + data.error);
                         }
-                        
-                        // Insere sequencialmente as linhas obtidas da API
-                        data.movimentacoes.forEach(mov => {
-                            const row = tbody.insertRow();
-                            const dataFormatada = new Date(mov.date).toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'}) + 'h';
-                            
-                            row.innerHTML = `
-                                <td>${dataFormatada}</td>
-                                <td>${mov.description}</td>
-                                <td>${mov.entrada > 0 ? 'R$ ' + mov.entrada.toFixed(2) : '—'}</td>
-                                <td>${mov.saida > 0 ? 'R$ ' + mov.saida.toFixed(2) : '—'}</td>
-                                <td>${mov.metodo_pagamento || '—'}</td>
-                            `;
-                        });
-                        
-                        if(msg) msg.innerText = "Movimentações atualizadas.";
-                    } else {
-                        alert('Erro ao processar requisição: ' + data.error);
-                    }
-                })
-                .catch(error => console.error('Falha na comunicação AJAX:', error));
-        });
-    }
-});
-</script>
+                    })
+                    .catch(error => console.error('Falha na comunicação AJAX:', error));
+            });
+        }
+    });
+
+  	<!-- Lógica JavaScript para Abertura e Fechamento Seguro -->
+  		document.addEventListener("DOMContentLoaded", function () {
+  			const modal = document.getElementById("modalEntradaSaida");
+  			const btnOpen = document.getElementById("openModalBtn"); // ID que deve estar no seu botão "Adicionar Entrada/Saída"
+  			const btnClose = document.getElementById("closeModalBtn");
+      
+  			// Abre o modal ao clicar no botão disparador externo
+  			if (btnOpen) {
+  				btnOpen.addEventListener("click", function () {
+  					modal.style.display = "flex";
+  				});
+  			}
+      
+  			// Fecha o modal ao clicar no botão Cancelar interno
+  			if (btnClose) {
+  				btnClose.addEventListener("click", function () {
+  					modal.style.display = "none";
+  				});
+  			}
+      
+  			// Fecha o modal ao clicar fora da caixa branca (no fundo cinza)
+  			if (modal) {
+  				modal.addEventListener("click", function (e) {
+  					if (e.target === modal) {
+  						modal.style.display = "none";
+  					}
+  				});
+  			}
+  		});
+    
+  		document.addEventListener("DOMContentLoaded", function () {
+  			// Elementos do Modal de Abertura e View Principal
+  			const modalAbertura = document.getElementById("modalAbertura");
+  			const containerPrincipal = document.querySelector(".container");
+  			const btnAbrirCaixa = document.getElementById("btnAbrirCaixa");
+  			const saldoInicialInput = document.getElementById("saldoInicialInput");
+      
+  			// Elementos do Modal de Entrada/Saída (da etapa anterior)
+  			const modalEntradaSaida = document.getElementById("modalEntradaSaida");
+  			const btnOpenMovimentacao = document.getElementById("openModalBtn");
+  			const btnCloseMovimentacao = document.getElementById("closeModalBtn");
+      
+  			// Regra de transição da tela de abertura para o conteúdo principal
+  			if (btnAbrirCaixa) {
+  				btnAbrirCaixa.addEventListener("click", function () {
+  					const valorDigitado = saldoInicialInput.value.trim();
+          
+  					if (valorDigitado !== "" && valorDigitado !== "0" && valorDigitado !== "0,00") {
+  						// Esconde a tela de abertura
+  						modalAbertura.style.display = "none";
+  						// Mostra o container principal do sistema
+  						containerPrincipal.style.display = "block";
+  					} else {
+  						alert("Por favor, lance um valor válido no saldo inicial para abrir o caixa.");
+  						saldoInicialInput.focus();
+  					}
+  				});
+  			}
+      
+  			// Controle do outro modal (Adicionar Entrada/Saída)
+  			if (btnOpenMovimentacao) {
+  				btnOpenMovimentacao.addEventListener("click", function () {
+  					modalEntradaSaida.style.display = "flex";
+  				});
+  			}
+      
+  			if (btnCloseMovimentacao) {
+  				btnCloseMovimentacao.addEventListener("click", function () {
+  					modalEntradaSaida.style.display = "none";
+  				});
+  			}
+      
+  			if (modalEntradaSaida) {
+  				modalEntradaSaida.addEventListener("click", function (e) {
+  					if (e.target === modalEntradaSaida) {
+  						modalEntradaSaida.style.display = "none";
+  					}
+  				});
+  			}
+  		});
+
+  		document.addEventListener("DOMContentLoaded", function () {
+  			// Pegando as referências das telas e botões
+  			const containerPrincipal = document.querySelector(".container");
+  			const modalAbertura = document.getElementById("modalAbertura");
+  			const saldoInicialInput = document.getElementById("saldoInicialInput");
+      
+  			// Novos elementos do fechamento de caixa
+  			const modalFecharCaixa = document.getElementById("modalFecharCaixa");
+  			const btnFecharCaixaGatilho = document.querySelector(".btn-fechar"); // O botão "🖨️ Fechar Caixa" da barra de ações
+  			const btnCancelarFechamento = document.getElementById("btnCancelarFechamento");
+  			const btnConfirmarFechamento = document.getElementById("btnConfirmarFechamento");
+      
+  			// 1. Ao clicar no link "Fechar Caixa", exibe o modal de atenção
+  			if (btnFecharCaixaGatilho) {
+  				btnFecharCaixaGatilho.addEventListener("click", function (e) {
+  					e.preventDefault(); // Evita o comportamento padrão do link '#'
+  					modalFecharCaixa.style.display = "flex";
+  				});
+  			}
+      
+  			// 2. Se o usuário desistir e clicar em Cancelar, esconde o modal de atenção
+  			if (btnCancelarFechamento) {
+  				btnCancelarFechamento.addEventListener("click", function () {
+  					modalFecharCaixa.style.display = "none";
+  				});
+  			}
+      
+  			// 3. Ao confirmar o fechamento: esconde a atenção, limpa os campos antigos, esconde a tela principal e volta para a tela de abertura
+  			if (btnConfirmarFechamento) {
+  				btnConfirmarFechamento.addEventListener("click", function () {
+  					// Esconde o modal de atenção
+  					modalFecharCaixa.style.display = "none";
+          
+  					// Oculta a área de conteúdo do sistema ativo
+  					containerPrincipal.style.display = "none";
+          
+  					// Reseta o input de saldo inicial para uma nova abertura limpa
+  					if (saldoInicialInput) {
+  						saldoInicialInput.value = "";
+  					}
+          
+  					// Reexibe o modal inicial de abertura de caixa na tela inteira
+  					if (modalAbertura) {
+  						modalAbertura.style.display = "flex";
+  					}
+  				});
+  			}
+      
+  			// Fecha o modal caso cliquem fora da caixa de diálogo
+  			if (modalFecharCaixa) {
+  				modalFecharCaixa.addEventListener("click", function (e) {
+  					if (e.target === modalFecharCaixa) {
+  						modalFecharCaixa.style.display = "none";
+  					}
+  				});
+  			}
+  		});
+  </script>
 {% endblock %}

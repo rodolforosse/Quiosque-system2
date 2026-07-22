@@ -202,3 +202,66 @@ button[data-bs-toggle="collapse"].collapsed .fa-angle-down {
     color: #7f8c8d;
     font-size: 13px;
 }
+
+/*
+  ==========================================================================
+                      CONFIG DO MODAL FECHAR CAIXA
+  ========================================================================== */
+
+.modal-fechar-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.4);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 10001;
+}
+
+.modal-fechar-content {
+    background-color: #ffffff;
+    width: 100%;
+    max-width: 320px;
+    border-radius: 4px;
+    padding: 24px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    animation: popupFade 0.15s ease-out;
+}
+
+.modal-fechar-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 16px;
+}
+
+.btn-fechar-confirmar {
+    color: #0d47a1;
+}
+
+.btn-fechar-action {
+    background: none;
+    border: none;
+    font-size: 14px;
+    font-weight: bold;
+    text-transform: uppercase;
+    cursor: pointer;
+    padding: 8px 12px;
+    letter-spacing: 0.5px;
+}
+
+.modal-content {
+    position: relative;
+    display: none;
+    flex-direction: column;
+    width: 100%;
+    color: var(--bs-modal-color);
+    pointer-events: auto;
+    background-color: var(--bs-modal-bg);
+    background-clip: padding-box;
+    border: var(--bs-modal-border-width) solid var(--bs-modal-border-color);
+    border-radius: var(--bs-modal-border-radius);
+    outline: 0;
+}

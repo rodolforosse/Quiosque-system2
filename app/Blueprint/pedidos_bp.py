@@ -8,22 +8,11 @@ pedidos_bp = Blueprint('pedidos', __name__)
 
 pedidos_bp.menu_items = [
     {
-        'key': None,
-        'name': 'Vendas',
-        'icon': 'shopping-bag',
-        'order': 30,  # Abaixo de Caixa
-        'children': [
-            {
-                'key': 'pedidos.listar',
-                'name': 'Pedidos',
-                'icon': 'list'
-            },
-            {
-                'key': 'pedidos.criar',
-                'name': 'Novo Pedido',
-                'icon': 'plus-circle'
-            }
-        ]
+        'key': 'pedidos.listar',
+        'name': 'Pedidos',
+        'icon': 'bell-concierge',
+        'order': 20,  # Abaixo de Caixa
+        'children': []
     }
 ]
 

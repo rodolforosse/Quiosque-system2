@@ -7,24 +7,11 @@ produtos_bp = Blueprint('produtos', __name__)
 
 produtos_bp.menu_items = [
     {
-        'key': 'produtos.index_publico',
-        'name': 'Página Inicial',
-        'icon': 'home',
-        'order': 10,  # Ficará no topo
+        'key': 'produtos.vitrine_publica',
+        'name': 'Cadápio',
+        'icon': 'solid fa-utensils',
+        'order': 30,  # Ficará abaixo de pedidos
         'children': []
-    },
-    {
-        'key': None,
-        'name': 'Catálogos',
-        'icon': 'box',
-        'order': 20,  # Ficará logo abaixo da página inicial
-        'children': [
-            {
-                'key': 'produtos.vitrine_publica',
-                'name': 'Ver Produtos',
-                'icon': 'shopping-cart'
-            }
-        ]
     }
 ]
 

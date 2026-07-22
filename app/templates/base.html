@@ -7,8 +7,25 @@
         <!-- Gera o token de segurança CSRF de forma automática para o JavaScript ler -->
         <meta name="csrf-token" content="{{ csrf_token() }}">
         <title>{% block title %}Meu Site Oficial{% endblock %}</title>
+
+        <!-- Required scripts -->
+        <script type="text/javascript" src="static/js/qz-tray.js"></script>
+        <script type="text/javascript" src="static/js/lib.min.js"></script>
+
+        <!-- Pollyfills -->
+        <script type="text/javascript" src="static/js/sample/promise-polyfill-8.1.3.min.js"></script>
+        <script type="text/javascript" src="static/js/sample/whatwg-fetch-3.0.0.min.js"></script>
+        <script type="text/javascript" src="static/js/sample/padstart-pollyfill.js"></script>
+        <script type="text/javascript" src="static/js/sample/array-from-pollyfill.js"></script>
+
+        <!-- Page styling -->
+        <script type="text/javascript" src="static/js/sample/jquery-1.11.3.min.js"></script>
+        <script type="text/javascript" src="static/js/sample/bootstrap.bundle.min.js"></script>
+        <link rel="stylesheet" href="static/css/font-awesome.all.min.css" />
+        <link rel="stylesheet" href="static/css/bootstrap.min.css" />
+        <link rel="stylesheet" href="static/css/style.css" />
             
-        <!-- Ícones Font Awesome Free 6 -->
+        <!-- Ícones Font Awesome Free 7 -->
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
 
         <!-- favicons -->
@@ -17,238 +34,12 @@
         {% block extrastyle %}{% endblock %}
     
         <!-- CSS do Bootstrap 5 -->
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" crossorigin="anonymous">
+        <!-- <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" crossorigin="anonymous"> -->
 
         <!-- JS do Bootstrap 5 -->
-        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+        <!-- <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script> -->
         <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.min.js" defer></script>
 
-        <style>
-            @import url("https://cdn.jsdelivr.net/npm/bootstrap-icons@1.3.0/font/bootstrap-icons.css");
-            .bg-dark-menu {
-                background-color: #212529 !important;
-            }
-
-            .bi-plus-circle::before {
-                content: "\f4d3";
-                padding-bottom: 2px;
-            }
-            
-            /* Animação suave para a rotação da seta do submenu */
-            button[data-bs-toggle="collapse"] .fa-angle-down {
-                transition: transform 0.3s ease;
-                transform: rotate(180deg); /* Seta para cima quando o menu está aberto */
-            }
-
-            /* Quando o menu estiver fechado (o Bootstrap injeta a classe .collapsed), a seta volta ao padrão */
-            button[data-bs-toggle="collapse"].collapsed .fa-angle-down {
-                transform: rotate(0deg); /* Seta para baixo quando fechado */
-            }
-
-
-            /* ==========================================================================
-               FOLHA DE ESTILO EXCLUSIVA PARA IMPRESSÃO DE CUPOM TÉRMICO (80mm)
-               ========================================================================== */
-            @media print {
-              /* 1. Esconde absolutamente tudo o que pertence ao Dashboard e aos Modais nativos do Bootstrap */
-              body *, 
-              .modal, 
-              .modal-backdrop, 
-              #sidebar-wrapper, 
-              #page-content-wrapper, 
-              header, 
-              nav {
-                display: none !important;
-              }
-          
-              /* 2. Força apenas a nossa divisória temporária do cupom a ficar visível e esticada */
-              html, body, #area-impressao-termica-puro, #area-impressao-termica-puro * {
-                display: block !important;
-                background: #fff !important;
-                color: #000 !important;
-                margin: 0 !important;
-                padding: 0 !important;
-              }
-          
-              /* 3. Configuração de margem zero da bobina para o rolo da impressora térmica */
-              @page {
-                margin: 0 !important;
-                size: auto;
-              }
-          
-              /* 4. Contêiner do Cupom: Ajustado exatamente para a largura padrão de 80mm das cabeças térmicas */
-              .cupom-termico-container {
-                width: 72mm !important; /* Deixa margens livres nas laterais do rolo */
-                max-width: 72mm !important;
-                margin: 0 auto !important;
-                padding: 2mm 1mm 5mm 1mm !important;
-                font-family: 'Courier New', Courier, monospace !important; /* Fonte monoespaçada estilo caixa antiga */
-                font-size: 11px !important;
-                line-height: 1.3 !important;
-              }
-          
-              /* Estilizações internas estruturais do cupom */
-              .cupom-header {
-                text-align: center;
-                margin-bottom: 3px;
-              }
-              .cupom-header h2 {
-                font-size: 14px;
-                font-weight: bold;
-                margin: 0 0 2px 0;
-              }
-              .cupom-header h3 {
-                font-size: 12px;
-                font-weight: bold;
-                margin: 4px 0;
-              }
-              .cupom-header p {
-                margin: 0;
-              }
-              .cupom-divisor {
-                text-align: center;
-                font-weight: bold;
-                margin: 3px 0;
-                letter-spacing: -1px;
-              }
-              .cupom-cliente, .cupom-totais, .cupom-obs {
-                margin: 4px 0;
-              }
-              .cupom-cliente p, .cupom-totais p, .cupom-obs p {
-                margin: 1px 0;
-              }
-
-              /* Tabela de Produtos Monoespaçada */
-              .cupom-tabela-itens {
-                width: 100% !important;
-                border-collapse: collapse !important;
-                margin: 4px 0 !important;
-              }
-              .cupom-tabela-itens th {
-                font-size: 10px;
-                font-weight: bold;
-                border-bottom: 1px dashed #000;
-                padding-bottom: 2px;
-              }
-              .cupom-tabela-itens td {
-                padding: 3px 0;
-                font-size: 11px;
-                vertical-align: top;
-              }
-              .txt-truncate-item {
-                max-width: 32mm;
-                overflow: hidden;
-                white-space: nowrap;
-                text-overflow: ellipsis;
-              }
-              .txt-negrito {
-                font-weight: bold;
-              }
-              .txt-total-grande {
-                font-size: 13px;
-                font-weight: bold;
-                margin-top: 3px !important;
-              }
-              .cupom-totais p {
-                display: flex;
-                justify-content: space-between;
-              }
-              .cupom-footer {
-                text-align: center;
-                margin-top: 6px;
-                font-style: italic;
-              }
-            }
-
-            /* ==========================================================================
-                                       FINAL DA FOLHA DE ESTILO
-               ========================================================================== */
-            
-            /* Inputs Estilo Linha Flutuante */
-            .line-input {
-                width: 100%;
-                border: none;
-                border-bottom: 1px solid #ccc;
-                padding: 10px 0;
-                font-size: 14px;
-                outline: none;
-                color: #333;
-                background: transparent;
-            }
-        
-            .line-input:focus {
-                border-bottom: 2px solid #2ecc71;
-            }
-        
-            .line-input::placeholder {
-                color: #b2bec3;
-            }
-            
-            /*==========================================================================
-                           INICIO DA FOLHA DE ESTILO EXCLUSIVA CAIXA.HTML
-              ========================================================================== */
-
-            .actions-bar {
-                display: flex;
-                gap: 25px;
-                margin-bottom: 25px;
-                font-size: 14px;
-            }
-
-            .btn-fechar {
-                color: #e74c3c;
-                text-decoration: none;
-                font-weight: 500;
-                cursor: pointer;
-            }
-
-            .btn-adicionar {
-                color: #3498db;
-                text-decoration: none;
-                font-weight: 500;
-                cursor: pointer;
-            }
-
-            .table-container {
-                background-color: #ffffff;
-                border-radius: 4px;
-                overflow-x: auto;
-            }
-
-            .fluxo-table {
-                width: 100%;
-                border-collapse: collapse;
-                text-align: left;
-                font-size: 14px;
-            }
-
-            .fluxo-table th {
-                color: #2c3e50;
-                font-weight: 600;
-                padding: 14px 12px;
-                border-bottom: 2px solid #e0e0e0;
-            }
-            
-            .fluxo-table td {
-                padding: 16px 12px;
-                border-bottom: 1px solid #f1f2f6;
-                color: #333;
-            }
-
-            .relatorio-card {
-                background-color: #ffffff;
-                border: 1px solid #e0e0e0;
-                border-radius: 4px;
-                padding: 24px;
-                font-size: 14px;
-                height: fit-content;
-            }
-
-            .timestamp {
-                color: #7f8c8d;
-                font-size: 13px;
-            }
-        </style>
     </head>
     <body data-admin-utc-offset="-10800" class="bg-light h-100 m-0 p-0 overflow-hidden">
 

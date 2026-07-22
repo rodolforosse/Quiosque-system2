@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+    <title>Teste Impressora Térmica</title>
+    <script type="text/javascript" src="js/qz-tray.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background-color: #f4f4f4; }
+        .btn-imprimir { padding: 15px 30px; font-size: 18px; cursor: pointer; font-weight: bold; background: #3498db; color: white; border: none; border-radius: 5px; }
+        .btn-imprimir:hover { background: #2980b9; }
+        #status { font-size: 16px; margin-top: 15px; font-weight: bold; color: #333; }
+
+        /* ---------------------------------------------------- */
+        /* ESTILO DO SEU MODAL HTML (Formatado para a Térmica)  */
+        /* ---------------------------------------------------- */
+        #meuModalHTML {
+            width: 290px;          /* Largura ideal para não cortar nas bordas do papel de 80mm */
+            background: white;
+            padding: 10px;
+            color: black;
+            border: 1px solid #ccc;
+            margin-bottom: 20px;
+        }
+        .center { text-align: center; }
+        .bold { font-weight: bold; }
+        .logo { font-size: 24px; font-weight: bold; margin-bottom: 5px; }
+        
+        /* Tabela limpa e alinhada */
+        .tabela-itens { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }
+        .tabela-itens th { border-bottom: 1px solid black; text-align: left; }
+        .tabela-itens td { padding: 4px 0; }
+        .direita { text-align: right; }
+        
+        .total-container { border-top: 1px dashed black; margin-top: 10px; padding-top: 5px; font-size: 16px; }
+    </style>
+</head>
+<body>
+
+    <h1>Painel Administrativo - Quiosque Frutassa</h1>
+    
+    <!-- O SEU MODAL EM HTML PURO -->
+    <!-- Tudo dentro desta DIV será enviado para a impressora -->
+    <div id="meuModalHTML">
+        <div class="center">
+            <div class="logo">🍊 FRUTASSA</div>
+            <p style="margin: 0; font-size: 13px;">Shopping Centro - Loja 02</p>
+            <p style="margin: 5px 0;">--------------------------------------</p>
+        </div>
+
+        <p style="font-size: 13px; margin: 5px 0;">
+            <span class="bold">PEDIDO:</span> #10294<br>
+            <span class="bold">DATA:</span> 18/07/2026 13:14
+        </p>
+        
+        <table class="tabela-itens">
+            <thead>
+                <tr>
+                    <th>Item</th>
+                    <th class="direita">Qtd</th>
+                    <th class="direita">Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Suco de Laranja 500ml</td>
+                    <td class="direita">2</td>
+                    <td class="direita">R$ 24,00</td>
+                </tr>
+                <tr>
+                    <td>Salada Frutas Especial</td>
+                    <td class="direita">1</td>
+                    <td class="direita">R$ 18,50</td>
+                </tr>
+                <tr>
+                    <td>Agua Mineral c/ Gas</td>
+                    <td class="direita">1</td>
+                    <td class="direita">R$ 4,50</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="total-container">
+            <div class="direita bold">TOTAL: R$ 47,00</div>
+        </div>
+
+        <div class="center" style="margin-top: 15px; font-size: 12px;">
+            <p style="margin: 0;">Obrigado pela preferência!</p>
+            <p style="margin: 3px 0 0 0;">Volte sempre.</p>
+        </div>
+    </div>
+
+    <!-- Botão de ação -->
+    <button onclick="imprimirHtmlDoModal()" class="btn-imprimir">
+        🖨️ IMPRIMIR HTML DO MODAL
+    </button>
+
+    <p id="status">Status: Pronto para testar.</p>
+
+    <script>
+        // Configuração obrigatória da Promise exigida pelo navegador
+        qz.api.setPromiseType(function (resolver) { 
+            return new Promise(resolver); 
+        });
+
+	async function imprimirHtmlDoModal() {
+		const statusTxt = document.getElementById("status");
+		
+		try {
+			statusTxt.innerText = "Status: Conectando ao QZ Tray...";
+			if (!qz.websocket.isActive()) {
+				await qz.websocket.connect();
+			}
+	
+			statusTxt.innerText = "Status: Preparando o HTML...";
+			
+			// CORREÇÃO: Força o QZ Tray a enviar o comando de corte automaticamente ao fim do HTML
+			const config = qz.configs.create("Print ID", {
+				cut: true // Ativa a guilhotina nativa do driver após a impressão do HTML
+			}); 
+	
+			// Captura o HTML da div
+			const conteudoHtmlDoModal = document.getElementById("meuModalHTML").innerHTML;
+	
+			// O array agora contém APENAS objetos do tipo pixel/html estruturados identicamente
+			const dados = [
+				{
+					type: 'pixel', // Alinhado para o motor gráfico do QZ Tray
+					format: 'html',
+					flavor: 'plain',
+					data: conteudoHtmlDoModal,
+					options: {
+						pageWidth: 3.1, // Define a largura fixa de ~80mm para a bobina térmica
+						style: 'body { font-family: Arial; margin: 0; padding: 0; }' 
+					}
+				}
+			];
+	
+			statusTxt.innerText = "Status: Enviando HTML para a Print ID...";
+			await qz.print(config, dados);
+			statusTxt.innerText = "Status: HTML enviado e impresso com sucesso!";
+	
+		} catch (erro) {
+			console.error("Erro detalhado:", erro);
+			statusTxt.innerText = "Erro no processo: " + erro.message;
+		}
+	}
+    </script>
+</body>
+</html>
